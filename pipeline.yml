@@ -1,0 +1,96 @@
+---
+resource_types:
+- name: terraform
+  type: docker-image
+  source:
+    repository: ljfranklin/terraform-resource
+    tag: beta-backend
+
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
+shared:
+- params: &modify-terraforming-dns-params
+    GCP_DNS_PROJECT_ID: ((cf_infra_gcp_project_id))
+    GCP_DNS_SERVICE_ACCOUNT_EMAIL: ((cf_infra_gcp_service_account_email))
+    GCP_DNS_SERVICE_ACCOUNT_KEY: ((cf_infra_gcp_service_account_key))
+    GCP_DNS_ZONE_NAME: infrastructure
+    GCP_DNS_SUFFIX: gcp.infrastructure.cf-app.com
+    GCP_DNS_RECORD_TTL: 60
+
+
+resources:
+
+- name: terraforming
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:pivotal-cf/terraforming-gcp.git
+    private_key: ((cf_infra_bot_github_user.private_key))
+
+- name: version
+  type: semver
+  source:
+    driver: s3
+    bucket: terraforming
+    key: terraforming-gcp/version
+    access_key_id: ((aws_access_key_id))
+    secret_access_key: ((aws_secret_access_key))
+
+- name: env-state-gcp
+  type: terraform
+  source:
+    backend_type: gcs
+    backend_config:
+      bucket: infra-tf-states
+      prefix: gcp
+      region: us-east1
+      credentials: ((cf_infra_gcp_service_account_key))
+    vars:
+      project: ((cf_infra_gcp_project_id))
+      region: us-east1
+      zones: ["us-east1-b", "us-east1-c",  "us-east1-d"]
+      dns_suffix: gcp.infrastructure.cf-app.com
+      isolation_segment: true
+      service_account_key: ((cf_infra_gcp_service_account_key))
+      ssl_cert: ((ssl_cert.certificate))
+      ssl_private_key: ((ssl_cert.private_key))
+      iso_seg_ssl_cert: ((ssl_cert.certificate))
+      iso_seg_ssl_private_key: ((ssl_cert.private_key))
+
+jobs:
+- name: pave-gcp
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: terraforming
+      trigger: true
+  - do:
+    - put: env-state-gcp
+      params:
+        generate_random_name: true
+        terraform_source: terraforming/terraforming-pas
+        delete_on_failure: true
+        var_files: [tfvars/terraform.yml]
+
+- name: delete-gcp
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: terraforming
+      trigger: true
+  - do:
+    - put: env-state-gcp
+      params:
+        terraform_source: terraforming/terraforming-pas
+        delete_on_failure: true
+        env_name_file: env-state-gcp/name
+        action: destroy
+        var_files: [tfvars/terraform.yml]
+      get_params:
+        action: destroy
