@@ -6,60 +6,43 @@ resource_types:
     repository: ljfranklin/terraform-resource
     tag: beta-backend
 
-- name: pivnet
-  type: docker-image
-  source:
-    repository: pivotalcf/pivnet-resource
-    tag: latest-final
-
-shared:
-- params: &modify-terraforming-dns-params
-    GCP_DNS_PROJECT_ID: ((cf_infra_gcp_project_id))
-    GCP_DNS_SERVICE_ACCOUNT_EMAIL: ((cf_infra_gcp_service_account_email))
-    GCP_DNS_SERVICE_ACCOUNT_KEY: ((cf_infra_gcp_service_account_key))
-    GCP_DNS_ZONE_NAME: infrastructure
-    GCP_DNS_SUFFIX: gcp.infrastructure.cf-app.com
-    GCP_DNS_RECORD_TTL: 60
-
-
 resources:
-
 - name: terraforming
   type: git
   source:
     branch: master
-    uri: git@github.com:pivotal-cf/terraforming-gcp.git
-    private_key: ((cf_infra_bot_github_user.private_key))
-
-- name: version
-  type: semver
-  source:
-    driver: s3
-    bucket: terraforming
-    key: terraforming-gcp/version
-    access_key_id: ((aws_access_key_id))
-    secret_access_key: ((aws_secret_access_key))
+    uri: git@github.com:vchrisb/pcf-automation-gcp-paving
+    private_key: ((github.private_key))
 
 - name: env-state-gcp
   type: terraform
   source:
-    backend_type: gcs
+    #storage:
+      #endpoint: ((s3.endpoint))
+      #use_signing_v4: true
+      #region_name: ((s3.region))
+      #bucket: ((s3.bucket))
+      #bucket_path: ((s3.bucket_path))
+      #access_key_id: ((s3.access_key_id))
+      #secret_access_key: ((s3.secret_access_key))
+    backend_type: s3
     backend_config:
-      bucket: infra-tf-states
-      prefix: gcp
-      region: us-east1
-      credentials: ((cf_infra_gcp_service_account_key))
+      bucket: ((s3.bucket))
+      key: terraform-ci/terraform.tfstate
+      region: us-east-1
+      access_key: ((s3.access_key_id))
+      secret_key: ((s3.secret_access_key))
     vars:
-      project: ((cf_infra_gcp_project_id))
-      region: us-east1
-      zones: ["us-east1-b", "us-east1-c",  "us-east1-d"]
-      dns_suffix: gcp.infrastructure.cf-app.com
-      isolation_segment: true
-      service_account_key: ((cf_infra_gcp_service_account_key))
-      ssl_cert: ((ssl_cert.certificate))
-      ssl_private_key: ((ssl_cert.private_key))
-      iso_seg_ssl_cert: ((ssl_cert.certificate))
-      iso_seg_ssl_private_key: ((ssl_cert.private_key))
+      project: ((gcp.project))
+      region: ((gcp.region))
+      zones: ((gcp.zones))
+      service_account_key: ((gcp.gcp_service_account))
+      buckets_location: ((gcp.buckets_location))
+      dns_suffix: ((pas.dns_suffix))
+      ssl_cert: ((pas.ssl_cert.certificate))
+      ssl_private_key: ((pas.ssl_cert.private_key))
+      opsman_vm: false
+      opsman_image_url: "https://storage.googleapis.com/ops-manager-us/pcf-gcp-2.3-build.224.tar.gz"
 
 jobs:
 - name: pave-gcp
@@ -72,10 +55,9 @@ jobs:
   - do:
     - put: env-state-gcp
       params:
-        generate_random_name: true
-        terraform_source: terraforming/terraforming-pas
+        env_name: ((pas.env_name))
+        terraform_source: terraforming/terraforming-gcp/terraforming-pas
         delete_on_failure: true
-        var_files: [tfvars/terraform.yml]
 
 - name: delete-gcp
   serial: true
@@ -83,14 +65,13 @@ jobs:
   plan:
   - aggregate:
     - get: terraforming
-      trigger: true
+      trigger: false
   - do:
     - put: env-state-gcp
       params:
-        terraform_source: terraforming/terraforming-pas
+        terraform_source: terraforming/terraforming-gcp/terraforming-pas
         delete_on_failure: true
-        env_name_file: env-state-gcp/name
+        env_name: ((pas.env_name))
         action: destroy
-        var_files: [tfvars/terraform.yml]
       get_params:
         action: destroy
