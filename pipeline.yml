@@ -62,12 +62,10 @@ resources:
     regexp: platform-automation-image-(.*).tgz
 
 - name: opsman-product
-  type: s3
+  type: gcs-resource
   source:
-    access_key_id: ((s3.access_key_id))
-    bucket: ((s3.buckets.pivnet_products))
-    region_name: ((s3.region_name))
-    secret_access_key: ((s3.secret_access_key))
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
     regexp: OpsManager(.*)onGCP.yml
 
 # configurations
@@ -197,7 +195,7 @@ jobs:
     file: platform-automation-tasks/tasks/download-product.yml
     params:
       CONFIG_FILE: ((pas.env_name))/download-product-configs/opsman.yml
-      VARS_FILES: config/((pas.env_name))/download-product-configs/opsman-vars.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
     input_mapping:
       config: configuration
   - aggregate:
