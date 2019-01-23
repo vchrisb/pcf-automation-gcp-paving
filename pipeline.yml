@@ -25,13 +25,18 @@ resources:
       #bucket_path: ((s3.bucket_path))
       #access_key_id: ((s3.access_key_id))
       #secret_access_key: ((s3.secret_access_key))
-    backend_type: s3
+    # backend_type: s3
+    # backend_config:
+    #   bucket: ((s3.bucket))
+    #   key: terraform-ci/terraform.tfstate
+    #   region: us-east-1
+    #   access_key: ((s3.access_key_id))
+    #   secret_key: ((s3.secret_access_key))
+    backend_type: gcs
     backend_config:
-      bucket: ((s3.bucket))
-      key: terraform-ci/terraform.tfstate
-      region: us-east-1
-      access_key: ((s3.access_key_id))
-      secret_key: ((s3.secret_access_key))
+      bucket: ((gcp.bucket))
+      prefix: ((pas.env_name))/terraform/state
+      credentials: ((gcp.gcp_service_account))
     vars:
       project: ((gcp.project))
       region: ((gcp.region))
@@ -42,7 +47,7 @@ resources:
       ssl_cert: ((pas.ssl_cert.certificate))
       ssl_private_key: ((pas.ssl_cert.private_key))
       opsman_vm: false
-      opsman_image_url: "https://storage.googleapis.com/ops-manager-us/pcf-gcp-2.3-build.224.tar.gz"
+      opsman_image_url: ""
 
 jobs:
 - name: pave-gcp
@@ -57,7 +62,44 @@ jobs:
       params:
         env_name: ((pas.env_name))
         terraform_source: terraforming/terraforming-gcp/terraforming-pas
-        delete_on_failure: true
+        delete_on_failure: false
+    - task: render-template
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: jess/jq}
+        inputs:
+          - name: env-state-gcp
+        outputs:
+          - name: some-files
+        run:
+          path: /bin/sh
+          args:
+            - -c
+            - |
+                echo '{{ index (ds "data").azs 0 }}' > some-files/input
+
+    - task: render-config
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: hairyhenderson/gomplate
+            tag: alpine
+        inputs:
+          - name: env-state-gcp
+          - name: some-files
+        outputs:
+          - name: config_template
+        run:
+          path: /bin/sh
+          args:
+            - -c
+            - |
+                /bin/gomplate -f some-files/input -d data=file://$(pwd)/env-state-gcp/metadata?type=application/json -o config_template/test --verbose
+                cat config_template/test
 
 - name: delete-gcp
   serial: true
