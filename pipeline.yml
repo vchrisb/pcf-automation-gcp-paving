@@ -167,27 +167,31 @@ jobs:
   plan:
   - aggregate:
     - get: platform-automation-image
+      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: platform-automation-tasks
+      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: configuration
     - get: pcf-automation-source
+    - get: env-state-gcp
+      passed: [terraforming-gcp]
   - task: interpolate-config
     file: pcf-automation-source/tasks/interpolate.yml
     input_mapping:
-      files: configuration
+      config: configuration
       terraform-output: env-state-gcp
     output_mapping:
-      interpolated-files: configuration
+      interpolated-config: configuration
     params:
       ENV_NAME: ((pas.env_name))
       PIVNET_API_TOKEN: ((pivnet.api-api-token))
       GCP_AUTH_JSON: ((gcp.gcp_service_account))
       OM_USERNAME: ((opsman.username))
       OM_PASSWORD: ((opsman.password))
-      OM_DECRYPTION_PASSPHRASE: ((decryption-passphrase))
+      OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
   - task: download-opsman-image
     image: platform-automation-image
     file: platform-automation-tasks/tasks/download-product.yml

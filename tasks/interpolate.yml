@@ -11,12 +11,12 @@ inputs:
   # - Note that any changes present in this input
   #   will be committed along with the file copied in
   #   by this task.
-  - name: files
+  - name: config
   # - This is the input folder containing the file to be committed.
   #   Typically, this will from some other task
   #   with an output that needs to be persisted.
 outputs:
-  - name: interpolated-files
+  - name: interpolated-config
 
 params:
   ENV_NAME:
