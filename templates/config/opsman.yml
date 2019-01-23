@@ -5,7 +5,7 @@ opsman-configuration:
     project: {{ (ds "data").project }}
     region: {{ (ds "data").region }}
     zone: {{ index (ds "data").azs 0 }}
-    vm_name: {{ index range(split (ds "data").vm_tag "-" ) 0 }}-opsman
+    vm_name: {{ $tag := split (ds "data").vm_tag "-"}}{{ index $tag  0 }}-opsman
     # For SharedVPC: projects/[HOST_PROJECT_ID]/regions/[REGION]/subnetworks/[SUBNET]
     vpc_subnet: {{ (ds "data").management_subnet_name }}
     tags: ops-manager

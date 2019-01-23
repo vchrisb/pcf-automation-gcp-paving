@@ -62,15 +62,65 @@ jobs:
   plan:
   - aggregate:
     - get: pcf-automation-source
-    - get: configuration
-    - get: env-state-gcp
       trigger: true
       passed: [terraforming-gcp]
-  - task: render-config
+    - get: configuration
+  - task: add-new-templates
     input_mapping:
       config: configuration
-      terraform-output: env-state-gcp
       pcf-automation: pcf-automation-source
+    params:
+      ENV_NAME: ((pas.env_name))
+      GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@banck.net"
+      GIT_AUTHOR_NAME: "PCF Automation Bot"
+      COMMIT_MESSAGE: 'Update template files'
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine/git
+      inputs:
+        - name: config
+        - name: pcf-automation
+      outputs:
+        - name: config-commit
+      run:
+        path: /bin/sh
+        args:
+          - -c
+          - |
+              set -eux
+              git clone config config-commit
+              mkdir -p config-commit/$ENV_NAME
+              cp -a pcf-automation/templates/* config-commit/$ENV_NAME
+              ls -l config-commit/$ENV_NAME
+              git config --global user.email "$GIT_AUTHOR_EMAIL"
+              git config --global user.name "$GIT_AUTHOR_NAME"
+              cd config-commit
+              git add -A
+              git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
+  - put: configuration
+    params:
+      repository: config-commit
+      merge: true
+
+- name: upload-opsman
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: configuration
+    - get: env-state-gcp
+      passed: [terraforming-gcp]
+  - task: interpolate-terraform-config
+    input_mapping:
+      files: configuration
+      terraform-output: env-state-gcp
+    output_mapping:
+      interpolated-files: configuration
+    params:
+      ENV_NAME: ((pas.env_name))
     config:
       platform: linux
       image_resource:
@@ -78,15 +128,21 @@ jobs:
         source:
           repository: hairyhenderson/gomplate
           tag: alpine
+      inputs:
+        - name: files
+        - name: terraform-output
       outputs:
-        - name: config_template
+        - name: interpolated-files
       run:
         path: /bin/sh
         args:
           - -c
           - |
-              /bin/gomplate -f pcf-automation/templates/director.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o config_template/config/director.yml --verbose
-              cat config_template/config/director.yml
+              /bin/gomplate --input-dir files/$ENV_NAME -d data=file://$(pwd)/terraform-output/metadata?type=application/json --output-dir interpolated-files/$ENV_NAME --verbose
+              cat interpolated-files/$ENV_NAME/env/env.yml
+              cat interpolated-files/$ENV_NAME/download-product-configs/opsman.yml
+              cat interpolated-files/$ENV_NAME/config/director.yml
+              cat interpolated-files/$ENV_NAME/config/auth.yml
     # do:
     # - task: make-commit
     #   image: pcf-automation-image
