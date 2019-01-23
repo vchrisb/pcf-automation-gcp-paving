@@ -1,14 +1,14 @@
----
+---{{ $tag := split (ds "data").vm_tag "-"}}{{ $env_name := index $tag  0 }}
 opsman-configuration:
   gcp:
     gcp_service_account: ((gcp_auth_json))
     project: {{ (ds "data").project }}
     region: {{ (ds "data").region }}
     zone: {{ index (ds "data").azs 0 }}
-    vm_name: {{ $tag := split (ds "data").vm_tag "-"}}{{ index $tag  0 }}-opsman
+    vm_name: {{ $env_name }}-opsman
     # For SharedVPC: projects/[HOST_PROJECT_ID]/regions/[REGION]/subnetworks/[SUBNET]
     vpc_subnet: {{ (ds "data").management_subnet_name }}
-    tags: ops-manager
+    tags: ops-manager,{{ $env_name }}-ops-manager-external
     # This CPU, Memory and disk size demonstrated here
     # match the defaults, and needn't be included if these are the desired values
     custom_cpu: 2

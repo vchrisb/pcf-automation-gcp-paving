@@ -61,7 +61,7 @@ resources:
     json_key: ((gcp.gcp_service_account))
     regexp: platform-automation-image-(.*).tgz
 
-- name: opsman-product
+- name: opsman-image
   type: gcs-resource
   source:
     bucket: ((gcp.buckets.pivnet_products))
@@ -82,6 +82,18 @@ resources:
     private_key: ((github.private_key))
     uri: ((github.repos.configuration.uri))
     branch: master
+
+# triggers used to have jobs do something in a timely manner
+
+- name: one-time-trigger
+  type: time
+  source:
+    interval: 999999h
+
+# - name: daily-trigger
+#   type: time
+#   source:
+#     interval: 24h
 
 jobs:
 - name: terraforming-gcp
@@ -199,9 +211,103 @@ jobs:
     input_mapping:
       config: configuration
   - aggregate:
-    - put: opsman-product
+    - put: opsman-image
       params:
         file: downloaded-product/*
+
+- name: install-opsman
+  serial: true
+  serial_groups: [ install ]
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      passed: [fetch-platform-automation]
+      params:
+        unpack: true
+    - get: one-time-trigger
+      trigger: true
+    - get: platform-automation-tasks
+      passed: [fetch-platform-automation]
+      params:
+        unpack: true
+    - get: opsman-image
+      passed: [fetch-opsman]
+    - get: configuration
+    - get: pcf-automation-source
+    - get: env-state-gcp
+      passed: [terraforming-gcp]
+  - task: interpolate-config
+    file: pcf-automation-source/tasks/interpolate.yml
+    input_mapping:
+      config: configuration
+      terraform-output: env-state-gcp
+    output_mapping:
+      interpolated-config: configuration-interpolated
+    params:
+      ENV_NAME: ((pas.env_name))
+      PIVNET_API_TOKEN: ((pivnet.api-api-token))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      OM_USERNAME: ((opsman.username))
+      OM_PASSWORD: ((opsman.password))
+      OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
+  - task: create-vm
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/create-vm.yml
+    input_mapping:
+      image: opsman-image
+      state: configuration
+      config: configuration-interpolated
+    params:
+      VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
+      STATE_FILE: ((pas.env_name))/state/state.yml
+      OPSMAN_CONFIG_FILE: ((pas.env_name))/config/opsman.yml
+    ensure: &make-state-commit
+      do:
+        - task: make-commit
+          image: platform-automation-image
+          file: platform-automation-tasks/tasks/make-git-commit.yml
+          input_mapping:
+            repository: configuration
+            file-source: generated-state
+          output_mapping:
+            repository-commit: configuration-commit
+          params:
+            FILE_SOURCE_PATH: state.yml
+            FILE_DESTINATION_PATH: ((pas.env_name))/state/state.yml
+            GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@example.com"
+            GIT_AUTHOR_NAME: "PCF Automation Bot"
+            COMMIT_MESSAGE: 'Update state file'
+        - put: configuration
+          params:
+            repository: configuration-commit
+            merge: true
+  - task: configure-authentication
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-authentication.yml
+    attempts: 10
+    input_mapping:
+      env: configuration
+      config: configuration
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+      AUTH_CONFIG_FILE: ((pas.env_name))/config/auth.yml
+  - task: configure-director
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-director.yml
+    input_mapping:
+      config: configuration
+      env: configuration
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+      DIRECTOR_CONFIG_FILE: ((pas.env_name))/config/director.yml
+  - task: apply-director-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-director-changes.yml
+    input_mapping:
+      env: configuration
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
 
 - name: destroy-gcp
   serial: true
