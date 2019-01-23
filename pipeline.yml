@@ -5,15 +5,32 @@ resource_types:
   source:
     repository: ljfranklin/terraform-resource
     tag: beta-backend
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tags: latest-final
+- name: gcs-resource
+  type: docker-image
+  source:
+    repository: frodenas/gcs-resource
 
 resources:
+
+- name: platform-automation-pivnet
+  type: pivnet
+  source:
+    api_token: ((pivnet.api-api-token))
+    product_slug: platform-automation
+    product_version: 1\.(.*) # pin to major version 1
+    sort_by: semver
 
 - name: env-state-gcp
   type: terraform
   source:
     backend_type: gcs
     backend_config:
-      bucket: ((gcp.project))-((gcp.bucket))
+      bucket: ((gcp.buckets.terraform))
       prefix: ((pas.env_name))
       credentials: ((gcp.gcp_service_account))
     vars:
@@ -27,6 +44,31 @@ resources:
       ssl_private_key: ((pas.ssl_cert.private_key))
       opsman_vm: false
       opsman_image_url: ""
+
+# buckets
+
+- name: platform-automation-tasks
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: platform-automation-tasks-(.*).zip
+
+- name: platform-automation-image
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: platform-automation-image-(.*).tgz
+
+- name: opsman-product
+  type: s3
+  source:
+    access_key_id: ((s3.access_key_id))
+    bucket: ((s3.buckets.pivnet_products))
+    region_name: ((s3.region_name))
+    secret_access_key: ((s3.secret_access_key))
+    regexp: OpsManager(.*)onGCP.yml
 
 # configurations
 - name: pcf-automation-source
@@ -94,7 +136,6 @@ jobs:
               git clone config config-commit
               mkdir -p config-commit/$ENV_NAME
               cp -a pcf-automation/templates/* config-commit/$ENV_NAME
-              ls -l config-commit/$ENV_NAME
               git config --global user.email "$GIT_AUTHOR_EMAIL"
               git config --global user.name "$GIT_AUTHOR_NAME"
               cd config-commit
@@ -105,15 +146,36 @@ jobs:
       repository: config-commit
       merge: true
 
-- name: upload-opsman
+- name: fetch-platform-automation
+  # We use the pivnet resource to bootstrap the pipeline,
+  # and because this product is part of the pipeline, not the foundation
+  plan:
+  - get: platform-automation-pivnet
+    trigger: true
+  - aggregate:
+    - put: platform-automation-tasks
+      params:
+        file: platform-automation-pivnet/*tasks*.zip
+    - put: platform-automation-image
+      params:
+        file: platform-automation-pivnet/*image*.tgz
+
+
+- name: fetch-opsman
   serial: true
   public: false
   plan:
   - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
     - get: configuration
-    - get: env-state-gcp
-      passed: [terraforming-gcp]
-  - task: interpolate-terraform-config
+    - get: pcf-automation-source
+  - task: interpolate-config
+    file: pcf-automation-source/tasks/interpolate.yml
     input_mapping:
       files: configuration
       terraform-output: env-state-gcp
@@ -121,48 +183,24 @@ jobs:
       interpolated-files: configuration
     params:
       ENV_NAME: ((pas.env_name))
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: hairyhenderson/gomplate
-          tag: alpine
-      inputs:
-        - name: files
-        - name: terraform-output
-      outputs:
-        - name: interpolated-files
-      run:
-        path: /bin/sh
-        args:
-          - -c
-          - |
-              /bin/gomplate --input-dir files/$ENV_NAME -d data=file://$(pwd)/terraform-output/metadata?type=application/json --output-dir interpolated-files/$ENV_NAME --verbose
-              cat interpolated-files/$ENV_NAME/env/env.yml
-              cat interpolated-files/$ENV_NAME/download-product-configs/opsman.yml
-              cat interpolated-files/$ENV_NAME/config/director.yml
-              cat interpolated-files/$ENV_NAME/config/auth.yml
-              cat interpolated-files/$ENV_NAME/config/opsman.yml
-    # do:
-    # - task: make-commit
-    #   image: pcf-automation-image
-    #   file: pcf-automation-tasks/tasks/make-git-commit.yml
-    #   input_mapping:
-    #     repository: configuration
-    #     file-source: config_template
-    #   output_mapping:
-    #     repository-commit: configuration-commit
-    #   params:
-    #     FILE_SOURCE_PATHS: state.yml
-    #     FILE_DESTINATION_DIRECTORY: ((foundation))/config
-    #     GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@example.com"
-    #     GIT_AUTHOR_NAME: "PCF Automation Bot"
-    #     COMMIT_MESSAGE: 'Update state file'
-    # - put: configuration
-    #   params:
-    #     repository: configuration-commit
-    #     merge: true
+      PIVNET_API_TOKEN: ((pivnet.api-api-token))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      OM_USERNAME: ((opsman.username))
+      OM_PASSWORD: ((opsman.password))
+      OM_DECRYPTION_PASSPHRASE: ((decryption-passphrase))
+  - task: download-opsman-image
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/opsman.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/opsman-vars.yml
+    input_mapping:
+      config: configuration
+  - aggregate:
+    - put: opsman-product
+      params:
+        file: downloaded-product/*
+
 - name: destroy-gcp
   serial: true
   public: false
