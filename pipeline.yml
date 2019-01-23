@@ -143,6 +143,7 @@ jobs:
               cat interpolated-files/$ENV_NAME/download-product-configs/opsman.yml
               cat interpolated-files/$ENV_NAME/config/director.yml
               cat interpolated-files/$ENV_NAME/config/auth.yml
+              cat interpolated-files/$ENV_NAME/config/opsman.yml
     # do:
     # - task: make-commit
     #   image: pcf-automation-image
