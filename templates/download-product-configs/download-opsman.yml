@@ -1,0 +1,5 @@
+---
+pivnet-api-token: ((pivnet-api-token))
+pivnet-file-glob: "*onGCP.yml"
+pivnet-product-slug: ops-manager
+product-version: 2.4.1
