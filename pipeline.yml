@@ -7,35 +7,14 @@ resource_types:
     tag: beta-backend
 
 resources:
-- name: terraforming
-  type: git
-  source:
-    branch: master
-    uri: git@github.com:vchrisb/pcf-automation-gcp-paving
-    private_key: ((github.private_key))
 
 - name: env-state-gcp
   type: terraform
   source:
-    #storage:
-      #endpoint: ((s3.endpoint))
-      #use_signing_v4: true
-      #region_name: ((s3.region))
-      #bucket: ((s3.bucket))
-      #bucket_path: ((s3.bucket_path))
-      #access_key_id: ((s3.access_key_id))
-      #secret_access_key: ((s3.secret_access_key))
-    # backend_type: s3
-    # backend_config:
-    #   bucket: ((s3.bucket))
-    #   key: terraform-ci/terraform.tfstate
-    #   region: us-east-1
-    #   access_key: ((s3.access_key_id))
-    #   secret_key: ((s3.secret_access_key))
     backend_type: gcs
     backend_config:
-      bucket: ((gcp.bucket))
-      prefix: ((pas.env_name))/terraform/state
+      bucket: ((gcp.project))-((gcp.bucket))
+      prefix: ((pas.env_name))
       credentials: ((gcp.gcp_service_account))
     vars:
       project: ((gcp.project))
@@ -49,69 +28,95 @@ resources:
       opsman_vm: false
       opsman_image_url: ""
 
+# configurations
+- name: pcf-automation-source
+  type: git
+  source:
+    private_key: ((github.private_key))
+    uri: ((github.repos.pcf-automation-source.uri))
+    branch: master
+
+- name: configuration
+  type: git
+  source:
+    private_key: ((github.private_key))
+    uri: ((github.repos.configuration.uri))
+    branch: master
+
 jobs:
-- name: pave-gcp
+- name: terraforming-gcp
+  serial: true
+  public: false
+  plan:
+  - get: pcf-automation-source
+    trigger: true
+  - put: env-state-gcp
+    params:
+      env_name: ((pas.env_name))
+      terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
+      delete_on_failure: false
+
+- name: template-configuration
   serial: true
   public: false
   plan:
   - aggregate:
-    - get: terraforming
+    - get: pcf-automation-source
+    - get: configuration
+    - get: env-state-gcp
       trigger: true
-  - do:
-    - put: env-state-gcp
-      params:
-        env_name: ((pas.env_name))
-        terraform_source: terraforming/terraforming-gcp/terraforming-pas
-        delete_on_failure: false
-    - task: render-template
-      config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source: {repository: jess/jq}
-        inputs:
-          - name: env-state-gcp
-        outputs:
-          - name: some-files
-        run:
-          path: /bin/sh
-          args:
-            - -c
-            - |
-                echo '{{ index (ds "data").azs 0 }}' > some-files/input
-
-    - task: render-config
-      config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: hairyhenderson/gomplate
-            tag: alpine
-        inputs:
-          - name: env-state-gcp
-          - name: some-files
-        outputs:
-          - name: config_template
-        run:
-          path: /bin/sh
-          args:
-            - -c
-            - |
-                /bin/gomplate -f some-files/input -d data=file://$(pwd)/env-state-gcp/metadata?type=application/json -o config_template/test --verbose
-                cat config_template/test
-
-- name: delete-gcp
+      passed: [terraforming-gcp]
+  - task: render-config
+    input_mapping:
+      config: configuration
+      terraform-output: env-state-gcp
+      pcf-automation: pcf-automation-source
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: hairyhenderson/gomplate
+          tag: alpine
+      outputs:
+        - name: config_template
+      run:
+        path: /bin/sh
+        args:
+          - -c
+          - |
+              /bin/gomplate -f pcf-automation/templates/director.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o config_template/config/director.yml --verbose
+              cat config_template/config/director.yml
+    # do:
+    # - task: make-commit
+    #   image: pcf-automation-image
+    #   file: pcf-automation-tasks/tasks/make-git-commit.yml
+    #   input_mapping:
+    #     repository: configuration
+    #     file-source: config_template
+    #   output_mapping:
+    #     repository-commit: configuration-commit
+    #   params:
+    #     FILE_SOURCE_PATHS: state.yml
+    #     FILE_DESTINATION_DIRECTORY: ((foundation))/config
+    #     GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@example.com"
+    #     GIT_AUTHOR_NAME: "PCF Automation Bot"
+    #     COMMIT_MESSAGE: 'Update state file'
+    # - put: configuration
+    #   params:
+    #     repository: configuration-commit
+    #     merge: true
+- name: destroy-gcp
   serial: true
   public: false
   plan:
   - aggregate:
-    - get: terraforming
+    - get: pcf-automation-source
       trigger: false
   - do:
     - put: env-state-gcp
       params:
-        terraform_source: terraforming/terraforming-gcp/terraforming-pas
+        terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
         delete_on_failure: true
         env_name: ((pas.env_name))
         action: destroy

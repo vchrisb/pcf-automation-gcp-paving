@@ -1,0 +1,59 @@
+---
+platform: linux
+
+inputs:
+  - name: repository
+  # - This must be an initialized git repository.
+  # - Note that any changes present in this input
+  #   will be committed along with the file copied in
+  #   by this task.
+  - name: file-source
+  # - This is the input folder containing the file to be committed.
+  #   Typically, this will from some other task
+  #   with an output that needs to be persisted.
+outputs:
+  - name: repository-commit
+
+params:
+  FILE_SOURCE_PATHS:
+  # - Required
+  # - Filepath to be copied into the git repo
+  #   before a commit is created
+  # - Relative to the root of the `file-source` input
+  FILE_DESTINATION_DIRECTORY:
+  # - Required
+  # - Filepath to write the file specified by FILE_SOURCE_PATH
+  # - Relative to the root of the `repository` input
+  GIT_AUTHOR_NAME:
+  # - Required
+  # - Used directly by git to configure the human-readable
+  #   name in the `author` field of the commit
+  GIT_AUTHOR_EMAIL:
+  # - Required
+  # - Used directly by git to configure the email address
+  #   in the `author` field of the commit
+  COMMIT_MESSAGE:
+  # - Required
+  # - Specify a commit message to be used
+  #   for all commits made by this task.
+
+run:
+  path: bash
+  args:
+    - "-c"
+    - |
+      cat /var/version && echo ""
+      set -eu
+      git config --global user.email "$GIT_AUTHOR_EMAIL"
+      git config --global user.name "$GIT_AUTHOR_NAME"
+
+      git clone repository repository-commit
+
+      for fsp in ${FILE_SOURCE_PATHS}
+      do
+        cp file-source/"${fsp}" repository-commit/"$FILE_DESTINATION_DIRECTORY"
+      done
+
+      cd repository-commit
+      git add -A
+      git commit -m "$COMMIT_MESSAGE" --allow-empty
