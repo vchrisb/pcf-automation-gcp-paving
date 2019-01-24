@@ -186,6 +186,7 @@ jobs:
       params:
         unpack: true
     - get: configuration
+      passed: [template-configuration]
     - get: pcf-automation-source
     - get: env-state-gcp
       passed: [terraforming-gcp]
@@ -301,6 +302,7 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
       DIRECTOR_CONFIG_FILE: ((pas.env_name))/config/director.yml
+      VARS_FILES: config/((pas.env_name))/config/director-vars.yml
   - task: apply-director-changes
     image: platform-automation-image
     file: platform-automation-tasks/tasks/apply-director-changes.yml
@@ -310,14 +312,56 @@ jobs:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
 
-- name: destroy-gcp
+- name: destroy
   serial: true
   public: false
   plan:
   - aggregate:
     - get: pcf-automation-source
       trigger: false
+    - get: platform-automation-image
+      passed: [fetch-platform-automation]
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      passed: [fetch-platform-automation]
+      params:
+        unpack: true
+    - get: configuration
+    - get: env-state-gcp
+      passed: [terraforming-gcp]
   - do:
+    - task: interpolate-config
+      file: pcf-automation-source/tasks/interpolate.yml
+      input_mapping:
+        config: configuration
+        terraform-output: env-state-gcp
+      output_mapping:
+        interpolated-config: configuration-interpolated
+      params:
+        ENV_NAME: ((pas.env_name))
+        PIVNET_API_TOKEN: ((pivnet.api-api-token))
+        GCP_AUTH_JSON: ((gcp.gcp_service_account))
+        OM_USERNAME: ((opsman.username))
+        OM_PASSWORD: ((opsman.password))
+        OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
+    - task: delete-installation
+      image: platform-automation-image
+      file: platform-automation-tasks/tasks/delete-installation.yml
+      input_mapping:
+        env: configuration-interpolated
+      params:
+        ENV_FILE: ((pas.env_name))/env/env.yml
+    - task: delete-vm
+      image: platform-automation-image
+      file: platform-automation-tasks/tasks/delete-vm.yml
+      input_mapping:
+        state: configuration
+        config: configuration-interpolated
+      params:
+        VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
+        STATE_FILE: ((pas.env_name))/state/state.yml
+        OPSMAN_CONFIG_FILE: ((pas.env_name))/config/opsman.yml
     - put: env-state-gcp
       params:
         terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
@@ -326,3 +370,38 @@ jobs:
         action: destroy
       get_params:
         action: destroy
+    - task: delete-config
+      input_mapping:
+        config: configuration
+      params:
+        ENV_NAME: ((pas.env_name))
+        GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@banck.net"
+        GIT_AUTHOR_NAME: "PCF Automation Bot"
+        COMMIT_MESSAGE: 'Delete Environment'
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: alpine/git
+        inputs:
+          - name: configuration
+        outputs:
+          - name: config-commit
+        run:
+          path: /bin/sh
+          args:
+            - -c
+            - |
+                set -eux
+                git clone config config-commit
+                rm -rf config-commit/$ENV_NAME
+                git config --global user.email "$GIT_AUTHOR_EMAIL"
+                git config --global user.name "$GIT_AUTHOR_NAME"
+                cd config-commit
+                git add -A
+                git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
+    - put: configuration
+      params:
+        repository: config-commit
+        merge: true
