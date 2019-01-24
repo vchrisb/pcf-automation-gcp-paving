@@ -13,7 +13,7 @@ networks-configuration:
   networks:
   - name: {{ (ds "data").management_subnet_name }}
     subnets:
-    - iaas_identifier: {{ (ds "data").project }}/{{ (ds "data").network_name }}/{{ (ds "data").management_subnet_name }}/{{ (ds "data").region }}
+    - iaas_identifier: {{ (ds "data").network_name }}/{{ (ds "data").management_subnet_name }}/{{ (ds "data").region }}
       cidr: {{ (ds "data").infrastructure_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").management_subnet_gateway }}
@@ -24,7 +24,7 @@ networks-configuration:
       - {{ index (ds "data").azs 2 }}
   - name: {{ (ds "data").pas_subnet_name }}
     subnets:
-    - iaas_identifier: {{ (ds "data").project }}/{{ (ds "data").network_name }}/{{ (ds "data").pas_subnet_name }}/{{ (ds "data").region }}
+    - iaas_identifier: {{ (ds "data").network_name }}/{{ (ds "data").pas_subnet_name }}/{{ (ds "data").region }}
       cidr: {{ (ds "data").pas_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").pas_subnet_gateway }}
@@ -35,7 +35,7 @@ networks-configuration:
       - {{ index (ds "data").azs 2 }}
   - name: {{ (ds "data").services_subnet_name }}
     subnets:
-    - iaas_identifier: {{ (ds "data").project }}/{{ (ds "data").network_name }}/{{ (ds "data").services_subnet_name }}/{{ (ds "data").region }}
+    - iaas_identifier: {{ (ds "data").network_name }}/{{ (ds "data").services_subnet_name }}/{{ (ds "data").region }}
       cidr: {{ (ds "data").services_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").services_subnet_gateway }}
@@ -72,7 +72,8 @@ iaas-configuration:
   additional_cloud_properties: {}
   default_deployment_tag: {{ (ds "data").vm_tag }}
   project: {{ (ds "data").project }}
-  associated_service_account: {{ (ds "data").service_account_email }}
+  auth_json: |
+{{ env.Getenv "PIVNET_API_TOKEN" | strings.Indent 4 }}
 security-configuration:
   generate_vm_passwords: true
   opsmanager_root_ca_trusted_certs: true
