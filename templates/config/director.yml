@@ -45,7 +45,7 @@ networks-configuration:
       - {{ index (ds "data").azs 1 }}
       - {{ index (ds "data").azs 2 }}
 
-director_configuration:
+director-configuration:
   allow_legacy_agents: true
   blobstore_type: local
   bosh_recreate_on_next_deploy: false
@@ -68,18 +68,18 @@ director_configuration:
   resurrector_enabled: false
   retry_bosh_deploys: false
   skip_director_drain: true
-dns_configuration:
+dns-configuration:
   excluded_recursors: []
   handlers: []
-iaas_configuration:
+iaas-configuration:
   additional_cloud_properties: {}
   default_deployment_tag: {{ (ds "data").vm_tag }}
   project: {{ (ds "data").project }}
   associated_service_account: {{ (ds "data").service_account_email }}
-security_configuration:
+security-configuration:
   generate_vm_passwords: true
   opsmanager_root_ca_trusted_certs: true
-syslog_configuration:
+syslog-configuration:
   enabled: false
 resource-configuration:
   compilation:
