@@ -44,43 +44,43 @@ networks-configuration:
       - {{ index (ds "data").azs 0 }}
       - {{ index (ds "data").azs 1 }}
       - {{ index (ds "data").azs 2 }}
-properties-configuration:
-  director_configuration:
-    allow_legacy_agents: true
-    blobstore_type: local
-    bosh_recreate_on_next_deploy: false
-    bosh_recreate_persistent_disks_on_next_deploy: false
-    database_type: internal
-    director_worker_count: 5
-    encryption:
-      keys: []
-      providers: []
-    hm_emailer_options:
-      enabled: false
-    hm_pager_duty_options:
-      enabled: false
-    identification_tags: {}
-    keep_unreachable_vms: false
-    local_blobstore_options:
-      tls_enabled: true
-    ntp_servers_string: 169.254.169.254
-    post_deploy_enabled: false
-    resurrector_enabled: false
-    retry_bosh_deploys: false
-    skip_director_drain: true
-  dns_configuration:
-    excluded_recursors: []
-    handlers: []
-  iaas_configuration:
-    additional_cloud_properties: {}
-    default_deployment_tag: {{ (ds "data").vm_tag }}
-    project: {{ (ds "data").project }}
-    associated_service_account: {{ (ds "data").service_account_email }}
-  security_configuration:
-    generate_vm_passwords: true
-    opsmanager_root_ca_trusted_certs: true
-  syslog_configuration:
+
+director_configuration:
+  allow_legacy_agents: true
+  blobstore_type: local
+  bosh_recreate_on_next_deploy: false
+  bosh_recreate_persistent_disks_on_next_deploy: false
+  database_type: internal
+  director_worker_count: 5
+  encryption:
+    keys: []
+    providers: []
+  hm_emailer_options:
     enabled: false
+  hm_pager_duty_options:
+    enabled: false
+  identification_tags: {}
+  keep_unreachable_vms: false
+  local_blobstore_options:
+    tls_enabled: true
+  ntp_servers_string: 169.254.169.254
+  post_deploy_enabled: false
+  resurrector_enabled: false
+  retry_bosh_deploys: false
+  skip_director_drain: true
+dns_configuration:
+  excluded_recursors: []
+  handlers: []
+iaas_configuration:
+  additional_cloud_properties: {}
+  default_deployment_tag: {{ (ds "data").vm_tag }}
+  project: {{ (ds "data").project }}
+  associated_service_account: {{ (ds "data").service_account_email }}
+security_configuration:
+  generate_vm_passwords: true
+  opsmanager_root_ca_trusted_certs: true
+syslog_configuration:
+  enabled: false
 resource-configuration:
   compilation:
     instances: automatic
