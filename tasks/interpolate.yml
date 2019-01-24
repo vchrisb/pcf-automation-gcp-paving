@@ -36,6 +36,7 @@ run:
         mkdir -p interpolated-config/$ENV_NAME/download-product-configs
         /bin/gomplate -f config/$ENV_NAME/config/auth.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/auth.yml --verbose
         /bin/gomplate -f config/$ENV_NAME/config/director.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/director.yml --verbose
+        /bin/gomplate -i $'gcp_auth_json: |\n{{env.Getenv "GCP_AUTH_JSON" | strings.Indent 2 }}' -o interpolated-config/$ENV_NAME/config/director-vars.yml --verbose
         /bin/gomplate -f config/$ENV_NAME/config/opsman.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/opsman.yml --verbose
         /bin/gomplate -i $'gcp_auth_json: |\n{{env.Getenv "GCP_AUTH_JSON" | strings.Indent 2 }}' -o interpolated-config/$ENV_NAME/config/opsman-vars.yml --verbose
         /bin/gomplate -f config/$ENV_NAME/download-product-configs/opsman.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/download-product-configs/opsman.yml --verbose

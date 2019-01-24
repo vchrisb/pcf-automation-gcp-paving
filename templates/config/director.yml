@@ -72,8 +72,7 @@ iaas-configuration:
   additional_cloud_properties: {}
   default_deployment_tag: {{ (ds "data").vm_tag }}
   project: {{ (ds "data").project }}
-  auth_json: |
-{{ env.Getenv "PIVNET_API_TOKEN" | strings.Indent 4 }}
+  auth_json: ((gcp_auth_json))
 security-configuration:
   generate_vm_passwords: true
   opsmanager_root_ca_trusted_certs: true
