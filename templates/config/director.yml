@@ -68,9 +68,6 @@ director-configuration:
   resurrector_enabled: false
   retry_bosh_deploys: false
   skip_director_drain: true
-dns-configuration:
-  excluded_recursors: []
-  handlers: []
 iaas-configuration:
   additional_cloud_properties: {}
   default_deployment_tag: {{ (ds "data").vm_tag }}
