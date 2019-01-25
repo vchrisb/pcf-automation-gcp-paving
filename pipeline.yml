@@ -156,7 +156,14 @@ jobs:
     params:
       repository: config-commit
       merge: true
-
+  - task: interpolate-config
+    file: pcf-automation-source/tasks/manage-gcp-ns.yml
+    input_mapping:
+      terraform-output: env-state-gcp
+    params:
+      ENV_NAME: ((pas.env_name))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      ACTION: "add"
 - name: fetch-platform-automation
   # We use the pivnet resource to bootstrap the pipeline,
   # and because this product is part of the pipeline, not the foundation
@@ -178,18 +185,15 @@ jobs:
   plan:
   - aggregate:
     - get: platform-automation-image
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: platform-automation-tasks
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: configuration
       passed: [template-configuration]
     - get: pcf-automation-source
     - get: env-state-gcp
-      passed: [terraforming-gcp]
   - task: interpolate-config
     file: pcf-automation-source/tasks/interpolate.yml
     input_mapping:
@@ -223,13 +227,11 @@ jobs:
   plan:
   - aggregate:
     - get: platform-automation-image
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: one-time-trigger
       trigger: true
     - get: platform-automation-tasks
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: opsman-image
@@ -237,7 +239,6 @@ jobs:
     - get: configuration
     - get: pcf-automation-source
     - get: env-state-gcp
-      passed: [terraforming-gcp]
   - task: interpolate-config
     file: pcf-automation-source/tasks/interpolate.yml
     input_mapping:
@@ -320,16 +321,13 @@ jobs:
     - get: pcf-automation-source
       trigger: false
     - get: platform-automation-image
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: platform-automation-tasks
-      passed: [fetch-platform-automation]
       params:
         unpack: true
     - get: configuration
     - get: env-state-gcp
-      passed: [terraforming-gcp]
   - do:
     - task: interpolate-config
       file: pcf-automation-source/tasks/interpolate.yml
@@ -385,7 +383,7 @@ jobs:
           source:
             repository: alpine/git
         inputs:
-          - name: configuration
+          - name: config
         outputs:
           - name: config-commit
         run:

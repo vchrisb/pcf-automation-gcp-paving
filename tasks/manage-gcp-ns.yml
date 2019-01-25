@@ -1,0 +1,28 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: google/cloud-sdk
+inputs:
+  - name: terraform-output
+params:
+  ENV_NAME:
+  GCP_AUTH_JSON:
+  ACTION:
+  # valid is add and remove
+run:
+  path: /bin/sh
+  args:
+    - -c
+    - |
+      echo $GCP_AUTH_JSON > keyfile.json
+      gcloud auth activate-service-account --key-file=keyfile.json
+      TEST_RECORD=$(gcloud dns record-sets list --zone automation --name="$ENV_NAME.gcp.cfops.net." --format=yaml)
+      gcloud dns record-sets transaction start -z=automation
+      if ([ ! -z $TEST_RECORD ] && [ $ACTION = "add" ]) || ([ -z $TEST_RECORD ] && [ $ACTION = "remove" ]); then echo "no action"; else gcloud dns record-sets transaction $ACTION -z=automation \
+         --name="$ENV_NAME.gcp.cfops.net." \
+         --type=NS \
+         --ttl=300 $(python3 -c 'import json;f=json.load(open("terraform-output/metadata")); print("{0} {1}".format(f["env_dns_zone_name_servers"][0],f["env_dns_zone_name_servers"][1]))') \
+         ; fi
+      gcloud dns record-sets transaction execute -z=automation
