@@ -68,6 +68,20 @@ resources:
     json_key: ((gcp.gcp_service_account))
     regexp: OpsManager(.*)onGCP.yml
 
+- name: pas-product
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: cf-(.*).pivotal
+
+- name: pas-stemcell
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: pas-stemcell/light-bosh-stemcell-(.*)-google.*\.tgz #light-bosh-stemcell-170.24-google-kvm-ubuntu-xenial-go_agent.tgz
+
 # configurations
 - name: pcf-automation-source
   type: git
@@ -90,10 +104,10 @@ resources:
   source:
     interval: 999999h
 
-# - name: daily-trigger
-#   type: time
-#   source:
-#     interval: 24h
+- name: daily-trigger
+  type: time
+  source:
+    interval: 24h
 
 jobs:
 - name: terraforming-gcp
@@ -181,7 +195,7 @@ jobs:
       params:
         file: platform-automation-pivnet/*image*.tgz
 
-
+### FETCH JOBS
 - name: fetch-opsman
   serial: true
   public: false
@@ -197,6 +211,8 @@ jobs:
       passed: [template-configuration]
     - get: pcf-automation-source
     - get: env-state-gcp
+    - get: daily-trigger
+      trigger: true
   - task: interpolate-config
     file: pcf-automation-source/tasks/interpolate.yml
     input_mapping:
@@ -223,6 +239,53 @@ jobs:
     - put: opsman-image
       params:
         file: downloaded-product/*
+
+- name: fetch-pas
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      passed: [template-configuration]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+    - get: daily-trigger
+      trigger: true
+  - task: interpolate-config
+    file: pcf-automation-source/tasks/interpolate.yml
+    input_mapping:
+      config: configuration
+      terraform-output: env-state-gcp
+    output_mapping:
+      interpolated-config: configuration
+    params:
+      ENV_NAME: ((pas.env_name))
+      PIVNET_API_TOKEN: ((pivnet.api-api-token))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      OM_USERNAME: ((opsman.username))
+      OM_PASSWORD: ((opsman.password))
+      OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
+  - task: download-pas-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: download-product-configs/pas.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration
+    output_mapping:
+      downloaded-stemcell: pas-stemcell
+  - aggregate:
+    - put: pas-product
+      params:
+        file: downloaded-product/*.pivotal
+    - put: pas-stemcell
+      params:
+        file: pas-stemcell/*.tgz
 
 - name: install-opsman
   serial: true
