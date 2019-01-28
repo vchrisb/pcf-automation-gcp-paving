@@ -39,7 +39,7 @@ resources:
       zones: ((gcp.zones))
       service_account_key: ((gcp.gcp_service_account))
       buckets_location: ((gcp.buckets_location))
-      dns_suffix: ((pas.dns_suffix))
+      dns_suffix: ((gcp.parent_zone.dns_suffix))
       ssl_cert: ((pas.ssl_cert.certificate))
       ssl_private_key: ((pas.ssl_cert.private_key))
       opsman_vm: false
@@ -165,6 +165,7 @@ jobs:
       ENV_NAME: ((pas.env_name))
       GCP_AUTH_JSON: ((gcp.gcp_service_account))
       PROJECT: ((gcp.project))
+      PARENT_ZONE_NAME: ((gcp.parent_zone.name))
       ACTION: "add"
 - name: fetch-platform-automation
   # We use the pivnet resource to bootstrap the pipeline,
@@ -370,6 +371,16 @@ jobs:
         action: destroy
       get_params:
         action: destroy
+    - task: remove-ns
+      file: pcf-automation-source/tasks/manage-gcp-ns.yml
+      input_mapping:
+        terraform-output: env-state-gcp
+      params:
+        ENV_NAME: ((pas.env_name))
+        GCP_AUTH_JSON: ((gcp.gcp_service_account))
+        PROJECT: ((gcp.project))
+        PARENT_ZONE_NAME: ((gcp.parent_zone.name))
+        ACTION: "remove"
     - task: delete-config
       input_mapping:
         config: configuration
