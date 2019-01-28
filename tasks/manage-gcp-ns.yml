@@ -9,6 +9,7 @@ inputs:
 params:
   ENV_NAME:
   GCP_AUTH_JSON:
+  PROJECT:
   ACTION:
   # valid is add and remove
 run:
@@ -18,6 +19,7 @@ run:
     - |
       printf '%s\n' "$GCP_AUTH_JSON" > keyfile.json
       gcloud auth activate-service-account --key-file=keyfile.json
+      gcloud config set project $PROJECT
       TEST_RECORD=$(gcloud dns record-sets list --zone automation --name="$ENV_NAME.gcp.cfops.net." --format=yaml)
       gcloud dns record-sets transaction start -z=automation
       if ([ ! -z $TEST_RECORD ] && [ $ACTION = "add" ]) || ([ -z $TEST_RECORD ] && [ $ACTION = "remove" ]); then echo "no action"; else gcloud dns record-sets transaction $ACTION -z=automation \

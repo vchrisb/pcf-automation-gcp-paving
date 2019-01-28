@@ -164,6 +164,7 @@ jobs:
     params:
       ENV_NAME: ((pas.env_name))
       GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      PROJECT: ((gcp.project))
       ACTION: "add"
 - name: fetch-platform-automation
   # We use the pivnet resource to bootstrap the pipeline,
