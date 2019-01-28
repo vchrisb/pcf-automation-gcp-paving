@@ -117,6 +117,7 @@ jobs:
       trigger: true
       passed: [terraforming-gcp]
     - get: configuration
+    - get: env-state-gcp
   - task: add-new-templates
     input_mapping:
       config: configuration
@@ -156,7 +157,7 @@ jobs:
     params:
       repository: config-commit
       merge: true
-  - task: interpolate-config
+  - task: update-ns
     file: pcf-automation-source/tasks/manage-gcp-ns.yml
     input_mapping:
       terraform-output: env-state-gcp

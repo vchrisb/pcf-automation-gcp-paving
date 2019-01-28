@@ -16,7 +16,7 @@ run:
   args:
     - -c
     - |
-      echo $GCP_AUTH_JSON > keyfile.json
+      printf '%s\n' "$GCP_AUTH_JSON" > keyfile.json
       gcloud auth activate-service-account --key-file=keyfile.json
       TEST_RECORD=$(gcloud dns record-sets list --zone automation --name="$ENV_NAME.gcp.cfops.net." --format=yaml)
       gcloud dns record-sets transaction start -z=automation
