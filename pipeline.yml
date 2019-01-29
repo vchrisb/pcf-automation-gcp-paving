@@ -460,6 +460,9 @@ jobs:
       OM_USERNAME: ((opsman.username))
       OM_PASSWORD: ((opsman.password))
       OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
+      CLOUD_CONTROLLER_ENCRYPT_KEY: ((pas.cloud_controller_encrypt_key))
+      MYSQL_EMAIL: ((pas.mysql_email))
+      CREDHUB_KEY_ENCRYPTION_PASSWORD: ((pas.credhub_key_encryption_password))
   - task: upload-pas-stemcell
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-stemcell.yml
@@ -499,9 +502,9 @@ jobs:
       OM_USERNAME: ((opsman.username))
       OM_PASSWORD: ((opsman.password))
       OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
-      CLOUD_CONTROLLER_ENCRYPT_KEY: (( pas.cloud_controller_encrypt_key ))
-      MYSQL_EMAIL: (( pas.mysql_email ))
-      CREDHUB_KEY_ENCRYPTION_PASSWORD: (( pas.credhub_key_encryption_password ))
+      CLOUD_CONTROLLER_ENCRYPT_KEY: ((pas.cloud_controller_encrypt_key))
+      MYSQL_EMAIL: ((pas.mysql_email))
+      CREDHUB_KEY_ENCRYPTION_PASSWORD: ((pas.credhub_key_encryption_password))
   - task: configure-pas
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-product.yml
