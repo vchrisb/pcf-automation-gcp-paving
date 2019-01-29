@@ -503,14 +503,55 @@ jobs:
       MYSQL_EMAIL: (( pas.mysql_email ))
       CREDHUB_KEY_ENCRYPTION_PASSWORD: (( pas.credhub_key_encryption_password ))
   - task: configure-pas
-    image: pcf-automation-image
-    file: pcf-automation-tasks/tasks/configure-product.yml
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
     input_mapping:
       config: configuration-interpolated
       env: configuration-interpolated
     params:
       CONFIG_FILE: ((pas.env_name))/config/cf.yml
       VARS_FILES: config/((pas.env_name))/config/cf-vars.yml
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
+- name: apply-product-changes
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+      passed:
+      - configure-pas
+      trigger: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - task: interpolate-config
+    file: pcf-automation-source/tasks/interpolate.yml
+    input_mapping:
+      config: configuration
+      terraform-output: env-state-gcp
+    output_mapping:
+      interpolated-config: configuration-interpolated
+    params:
+      ENV_NAME: ((pas.env_name))
+      PIVNET_API_TOKEN: ((pivnet.api-api-token))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      OM_USERNAME: ((opsman.username))
+      OM_PASSWORD: ((opsman.password))
+      OM_DECRYPTION_PASSPHRASE: ((opsman.decryption-passphrase))
+      CLOUD_CONTROLLER_ENCRYPT_KEY: (( pas.cloud_controller_encrypt_key ))
+      MYSQL_EMAIL: (( pas.mysql_email ))
+      CREDHUB_KEY_ENCRYPTION_PASSWORD: (( pas.credhub_key_encryption_password ))
+  - task: apply-product-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-changes.yml
+    input_mapping:
+      env: configuration-interpolated
+    params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
 # DESTROY
@@ -632,6 +673,7 @@ groups:
   - upload-and-stage-pas
   - upload-stemcell
   - configure-pas
+  - apply-product-changes
 - name: destroy
   jobs:
   - destroy
