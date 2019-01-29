@@ -482,7 +482,6 @@ jobs:
     - get: platform-automation-tasks
       params:
         unpack: true
-    - get: pas-product
     - get: configuration
     - get: pcf-automation-source
     - get: env-state-gcp
