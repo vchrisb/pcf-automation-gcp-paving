@@ -405,7 +405,7 @@ resource-config:
       id: automatic
     internet_connected: true
     elb_names:
-    - tcp:{{ (ds "data").web_lb_name }}
+    - tcp:{{ (ds "data").ws_router_pool }}
     - http:{{ (ds "data").http_lb_backend_name }}
   syslog_adapter:
     instances: automatic
