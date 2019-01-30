@@ -364,6 +364,7 @@ jobs:
       env: configuration-interpolated
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
+# UPGRADE
 
 - name: export-installation
   serial: true
@@ -380,6 +381,7 @@ jobs:
     - get: configuration
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [ install-opsman ]
   - <<: *interpolate
   - task: export-installation
     image: platform-automation-image
@@ -392,6 +394,49 @@ jobs:
     params:
       file: installation/installation.zip
 
+- name: upgrade-opsman
+  serial: true
+  serial_groups: [ install ]
+  plan:
+  - aggregate:
+    - get: one-time-trigger
+      passed: [ install-opsman ]
+    - get: platform-automation-image
+      params:
+        unpack: true
+      trigger: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: opsman-image
+    - get: installation
+      passed: [ export-installation ]
+    - get: configuration
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upgrade-opsman
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upgrade-opsman.yml
+    input_mapping:
+      image: opsman-image
+      state: configuration
+      config: configuration-interpolated
+      env: configuration-interpolated
+      vars: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+      VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
+      STATE_FILE: ((pas.env_name))/state/state.yml
+      OPSMAN_CONFIG_FILE: ((pas.env_name))/config/opsman.yml
+    ensure: *make-state-commit
+  - task: apply-director-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-director-changes.yml
+    input_mapping:
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
 
 - name: upload-and-stage-pas
   serial: true
@@ -400,9 +445,9 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-#      passed:
-#      - upgrade-opsman
-#      trigger: true
+      passed:
+      - upgrade-opsman
+      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
@@ -435,9 +480,9 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-#      passed:
-#      - upgrade-opsman
-#      trigger: true
+      passed:
+      - upgrade-opsman
+      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
@@ -627,11 +672,13 @@ groups:
   - install-opsman
 - name: upgrade
   jobs:
+  - export-installation
+  - upgrade-opsman
   - upload-and-stage-pas
   - upload-stemcell
   - configure-pas
   - apply-product-changes
-  - export-installation
+
 - name: destroy
   jobs:
   - destroy
