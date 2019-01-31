@@ -18,14 +18,23 @@ run:
   args:
     - -c
     - |
+      set -eu
       printf '%s\n' "$GCP_AUTH_JSON" > keyfile.json
       gcloud auth activate-service-account --key-file=keyfile.json
       gcloud config set project $PROJECT
-      TEST_RECORD=$(gcloud dns record-sets list --zone=$PARENT_ZONE_NAME --name="$ENV_NAME.gcp.cfops.net." --format=yaml)
+      RECORDS=$(gcloud dns record-sets list --zone=$PARENT_ZONE_NAME --name="$ENV_NAME.gcp.cfops.net." --format="value(rrdatas.flatten(separator=' '))")
       gcloud dns record-sets transaction start --zone=$PARENT_ZONE_NAME
-      if ([ ! -z "$TEST_RECORD" ] && [ $ACTION = "add" ]) || ([ -z "$TEST_RECORD" ] && [ $ACTION = "remove" ]); then echo "no action"; else gcloud dns record-sets transaction $ACTION --zone=$PARENT_ZONE_NAME \
+      if ([ ! -z "$RECORDS" ]; then
+        gcloud dns record-sets transaction remove --zone=$PARENT_ZONE_NAME \
          --name="$ENV_NAME.gcp.cfops.net." \
          --type=NS \
-         --ttl=300 $(python3 -c 'import json;f=json.load(open("terraform-output/metadata")); print("{0} {1}".format(f["env_dns_zone_name_servers"][0],f["env_dns_zone_name_servers"][1]))') \
-         ; fi
-      gcloud dns record-sets transaction execute --zone=$PARENT_ZONE_NAME
+         --ttl=300 $RECORDS
+      fi
+
+      if [ $ACTION = "add" ]; then
+        gcloud dns record-sets transaction start --zone=$PARENT_ZONE_NAME
+        gcloud dns record-sets transaction add --zone=$PARENT_ZONE_NAME \
+         --name="$ENV_NAME.gcp.cfops.net." \
+         --type=NS \
+         --ttl=300 $(python3 -c 'import json;f=json.load(open("terraform-output/metadata")); print("{0} {1}".format(f["env_dns_zone_name_servers"][0],f["env_dns_zone_name_servers"][1]))')
+      fi

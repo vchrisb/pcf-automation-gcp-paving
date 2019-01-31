@@ -33,6 +33,7 @@ run:
   args:
     - -c
     - |
+        set -eu
         mkdir -p interpolated-config/$ENV_NAME/config
         mkdir -p interpolated-config/$ENV_NAME/env
         mkdir -p interpolated-config/$ENV_NAME/download-product-configs
