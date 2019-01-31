@@ -404,7 +404,6 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
@@ -412,6 +411,7 @@ jobs:
     - get: installation
       passed: [ export-installation ]
     - get: configuration
+      trigger: true
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -445,14 +445,15 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-      passed:
-      - upgrade-opsman
-      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
     - get: pas-product
+      trigger: true
     - get: configuration
+      passed:
+      - upgrade-opsman
+      trigger: true
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -480,15 +481,15 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-      passed:
-      - upgrade-opsman
-      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
     - get: pas-stemcell
       trigger: true
     - get: configuration
+      passed:
+      - upgrade-opsman
+      trigger: true
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
