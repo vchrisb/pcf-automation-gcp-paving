@@ -129,7 +129,7 @@ jobs:
       terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
       delete_on_failure: false
 
-- name: template-configuration
+- name: configuration
   serial: true
   public: false
   plan:
@@ -238,23 +238,6 @@ jobs:
       CLOUD_CONTROLLER_ENCRYPT_KEY: ((pas.cloud_controller_encrypt_key))
       MYSQL_EMAIL: ((pas.mysql_email))
       CREDHUB_KEY_ENCRYPTION_PASSWORD: ((pas.credhub_key_encryption_password))
-  - task: debug-task
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: hairyhenderson/gomplate
-          tag: alpine
-      inputs:
-        - name: configuration-interpolated
-      run:
-        path: /bin/sh
-        args:
-          - -c
-          - |
-            cat configuration-interpolated/((pas.env_name))/download-product-configs/opsman.yml
-            cat configuration-interpolated/((pas.env_name))/download-product-configs/vars.yml
   - task: download-opsman-image
     image: platform-automation-image
     file: platform-automation-tasks/tasks/download-product.yml
