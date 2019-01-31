@@ -24,7 +24,7 @@ run:
       gcloud config set project $PROJECT
       RECORDS=$(gcloud dns record-sets list --zone=$PARENT_ZONE_NAME --name="$ENV_NAME.gcp.cfops.net." --format="value(rrdatas.flatten(separator=' '))")
       gcloud dns record-sets transaction start --zone=$PARENT_ZONE_NAME
-      if ([ ! -z "$RECORDS" ]; then
+      if [ ! -z "$RECORDS" ]; then
         gcloud dns record-sets transaction remove --zone=$PARENT_ZONE_NAME \
          --name="$ENV_NAME.gcp.cfops.net." \
          --type=NS \
