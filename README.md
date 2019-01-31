@@ -11,6 +11,7 @@ It is using [terraforming-gcp](https://github.com/pivotal-cf/terraforming-gcp) a
 * Private Git Repository
 * three private GCS Buckets
 * concourse
+* a (sub-)domain hosted on GCP
 
 # Credentials
 
