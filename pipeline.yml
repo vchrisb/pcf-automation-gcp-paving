@@ -45,6 +45,7 @@ resources:
       opsman_vm: false
       opsman_image_url: ""
       parent_managed_zone: ((gcp.parent_zone.name))
+      email: ((pas.mysql_email))
 
 # buckets
 
@@ -130,6 +131,7 @@ jobs:
       terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
       override_files:
         - pcf-automation-source/terraform_override_files/dns_override.tf
+        - pcf-automation-source/terraform_override_files/acme_override.tf
       delete_on_failure: false
 
 - name: configuration

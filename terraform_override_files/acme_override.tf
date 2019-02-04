@@ -37,3 +37,35 @@ resource "acme_certificate" "certificate" {
     }
   }
 }
+
+output "certificate_domain" {
+  value = "${acme_certificate.certificate.certificate_domain}"
+}
+output "certificate_url" {
+  value = "${acme_certificate.certificate.certificate_url}"
+}
+output "certificate_pem" {
+  value = "${acme_certificate.certificate.certificate_pem}"
+}
+output "certificate_private_key_pem" {
+  value = "${acme_certificate.certificate.private_key_pem}"
+}
+output "certificate_issuer_pem" {
+  value = "${acme_certificate.certificate.issuer_pem}"
+}
+
+variable "ssl_cert" {
+  type        = "string"
+  description = "The contents of an SSL certificate to be used by the LB, optional if `ssl_ca_cert` is provided"
+  default     = <<EOF
+"${acme_certificate.certificate.certificate_pem}"
+"${acme_certificate.certificate.issuer_pem}"
+EOF
+
+}
+
+variable "ssl_private_key" {
+  type        = "string"
+  description = "The contents of an SSL private key to be used by the LB, optional if `ssl_ca_cert` is provided"
+  default     = "${acme_certificate.certificate.private_key_pem}"
+}
