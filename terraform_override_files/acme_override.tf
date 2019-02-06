@@ -1,3 +1,23 @@
+locals {
+    subdomains    = ["*.apps", "*.sys", "*.login.sys", "*.uaa.sys"]
+}
+
+variable "email" {
+  type = "string"
+}
+
+resource "local_file" "keyfile" {
+    content     = "${var.service_account_key}"
+    filename = "keyfile.json"
+}
+
+provider "acme" {
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
 
 resource "acme_registration" "reg" {
   account_key_pem = "${tls_private_key.private_key.private_key_pem}"
@@ -50,3 +70,4 @@ EOF
 module "pas" {
   ssl_certificate   = "${google_compute_ssl_certificate.certificate.self_link}"
 }
+
