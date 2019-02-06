@@ -17,7 +17,7 @@ networks-configuration:
       cidr: {{ (ds "data").infrastructure_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").management_subnet_gateway }}
-      reserved_ip_ranges: {{ $gateway := (ds "data").management_subnet_gateway }}{{$gateway}}-{{ $gateway_arr := split $gateway "." }}{{ index $gateway_arr 0 }}.{{ index $gateway_arr 1 }}.{{ index $gateway_arr 2 }}.9
+      reserved_ip_ranges: {{ (ds "data").subnet_mgmt_reserved }}
       availability_zone_names:
       - {{ index (ds "data").azs 0 }}
       - {{ index (ds "data").azs 1 }}
@@ -28,7 +28,7 @@ networks-configuration:
       cidr: {{ (ds "data").pas_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").pas_subnet_gateway }}
-      reserved_ip_ranges: {{ $gateway := (ds "data").pas_subnet_gateway }}{{$gateway}}-{{ $gateway_arr := split $gateway "." }}{{ index $gateway_arr 0 }}.{{ index $gateway_arr 1 }}.{{ index $gateway_arr 2 }}.9
+      reserved_ip_ranges: {{ (ds "data").subnet_pas_reserved }}
       availability_zone_names:
       - {{ index (ds "data").azs 0 }}
       - {{ index (ds "data").azs 1 }}
@@ -39,7 +39,7 @@ networks-configuration:
       cidr: {{ (ds "data").services_subnet_cidr }}
       dns: 169.254.169.254
       gateway: {{ (ds "data").services_subnet_gateway }}
-      reserved_ip_ranges: {{ $gateway := (ds "data").services_subnet_gateway }}{{$gateway}}-{{ $gateway_arr := split $gateway "." }}{{ index $gateway_arr 0 }}.{{ index $gateway_arr 1 }}.{{ index $gateway_arr 2 }}.9
+      reserved_ip_ranges: {{ (ds "data").subnet_pas_svc_reserved }}
       availability_zone_names:
       - {{ index (ds "data").azs 0 }}
       - {{ index (ds "data").azs 1 }}

@@ -138,6 +138,7 @@ jobs:
       override_files:
         - pcf-automation-source/terraform_override_files/dns_override.tf
         - pcf-automation-source/terraform_override_files/acme_override.tf
+        - pcf-automation-source/terraform_override_files/output_override.tf
       delete_on_failure: false
 
 - name: configuration
@@ -381,6 +382,8 @@ jobs:
       params:
         unpack: true
     - get: configuration
+      trigger: true
+      passed: [ configuration ]
     - get: pcf-automation-source
     - get: env-state-gcp
       passed: [ install-opsman ]
@@ -401,8 +404,6 @@ jobs:
   serial_groups: [ install ]
   plan:
   - aggregate:
-    - get: one-time-trigger
-      passed: [ install-opsman ]
     - get: platform-automation-image
       params:
         unpack: true
@@ -411,9 +412,9 @@ jobs:
         unpack: true
     - get: opsman-image
     - get: installation
-      passed: [ export-installation ]
     - get: configuration
       trigger: true
+      passed: [ export-installation ]
     - get: state
     - get: pcf-automation-source
     - get: env-state-gcp
@@ -454,9 +455,8 @@ jobs:
     - get: pas-product
       trigger: true
     - get: configuration
-      passed:
-      - upgrade-opsman
       trigger: true
+      passed: [ upgrade-opsman ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -490,9 +490,8 @@ jobs:
     - get: pas-stemcell
       trigger: true
     - get: configuration
-      passed:
-      - upgrade-opsman
       trigger: true
+      passed: [ upgrade-opsman ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -512,13 +511,13 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-      passed:
-      - upload-and-stage-pas
       trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
     - get: configuration
+      trigger: true
+      passed: [ upload-and-stage-pas ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -540,13 +539,12 @@ jobs:
     - get: platform-automation-image
       params:
         unpack: true
-      passed:
-      - configure-pas
-      trigger: true
     - get: platform-automation-tasks
       params:
         unpack: true
     - get: configuration
+      trigger: true
+      passed: [ configure-pas ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -611,6 +609,7 @@ jobs:
       override_files:
         - pcf-automation-source/terraform_override_files/dns_override.tf
         - pcf-automation-source/terraform_override_files/acme_override.tf
+        - pcf-automation-source/terraform_override_files/output_override.tf
       delete_on_failure: true
       env_name: ((pas.env_name))
       action: destroy
