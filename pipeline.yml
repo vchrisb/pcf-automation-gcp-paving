@@ -40,8 +40,6 @@ resources:
       service_account_key: ((gcp.gcp_service_account))
       buckets_location: ((gcp.buckets_location))
       dns_suffix: ((gcp.parent_zone.dns_suffix))
-      ssl_cert: ((pas.ssl_cert.certificate))
-      ssl_private_key: ((pas.ssl_cert.private_key))
       opsman_vm: false
       opsman_image_url: ""
       parent_managed_zone: ((gcp.parent_zone.name))
@@ -126,6 +124,7 @@ jobs:
   - get: pcf-automation-source
     trigger: true
   - put: env-state-gcp
+    attempts: 2
     params:
       env_name: ((pas.env_name))
       terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
@@ -552,7 +551,7 @@ jobs:
 
 # DESTROY
 
-- name: destroy
+- name: destroy-installation
   serial: true
   public: false
   plan:
@@ -566,7 +565,6 @@ jobs:
       params:
         unpack: true
     - get: configuration
-    - get: env-state-gcp
   - <<: *interpolate
   - try:
       task: delete-installation
@@ -586,9 +584,24 @@ jobs:
       VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
       STATE_FILE: ((pas.env_name))/state/state.yml
       OPSMAN_CONFIG_FILE: ((pas.env_name))/config/opsman.yml
+
+- name: destroy-terraform
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: pcf-automation-source
+      trigger: false
+    - get: configuration
+#      passed:
+#      - destroy-installation
+    - get: env-state-gcp
   - put: env-state-gcp
     params:
       terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
+      override_files:
+        - pcf-automation-source/terraform_override_files/dns_override.tf
+        - pcf-automation-source/terraform_override_files/acme_override.tf
       delete_on_failure: true
       env_name: ((pas.env_name))
       action: destroy
@@ -654,4 +667,5 @@ groups:
 
 - name: destroy
   jobs:
-  - destroy
+  - destroy-terraform
+  - destroy-installation
