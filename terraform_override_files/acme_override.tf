@@ -54,18 +54,19 @@ output "certificate_issuer_pem" {
   value = "${acme_certificate.certificate.issuer_pem}"
 }
 
-variable "ssl_cert" {
-  type        = "string"
-  description = "The contents of an SSL certificate to be used by the LB, optional if `ssl_ca_cert` is provided"
-  default     = <<EOF
+
+
+module "pas_certs" {
+  source = "../modules/certs"
+
+  subdomains    = ["*.apps", "*.sys", "*.login.sys", "*.uaa.sys"]
+  env_name      = "${var.env_name}"
+  dns_suffix    = "${var.dns_suffix}"
+  resource_name = "pas-lbcert"
+
+  ssl_cert           = <<EOF
 "${acme_certificate.certificate.certificate_pem}"
 "${acme_certificate.certificate.issuer_pem}"
 EOF
-
-}
-
-variable "ssl_private_key" {
-  type        = "string"
-  description = "The contents of an SSL private key to be used by the LB, optional if `ssl_ca_cert` is provided"
-  default     = "${acme_certificate.certificate.private_key_pem}"
+  ssl_private_key    = "${acme_certificate.certificate.private_key_pem}"
 }
