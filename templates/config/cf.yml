@@ -303,7 +303,7 @@ product-properties:
       secret: ""
 network-properties:
   network:
-    name: sandbox-pas-subnet
+    name: {{ (ds "data").pas_subnet_name }}
   other_availability_zones:
   - name: {{ index (ds "data").azs 0 }}
   - name: {{ index (ds "data").azs 1 }}

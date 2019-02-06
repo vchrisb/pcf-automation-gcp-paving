@@ -87,7 +87,7 @@ resources:
   source:
     bucket: ((gcp.buckets.installation))
     json_key: ((gcp.gcp_service_account))
-    versioned_file: installation.zip
+    regexp: installation-(.*).zip
 
 # configurations
 - name: pcf-automation-source
@@ -98,6 +98,13 @@ resources:
     branch: master
 
 - name: configuration
+  type: git
+  source:
+    private_key: ((github.private_key))
+    uri: ((github.repos.configuration.uri))
+    branch: master
+
+- name: state
   type: git
   source:
     private_key: ((github.private_key))
@@ -297,6 +304,7 @@ jobs:
     - get: opsman-image
       passed: [fetch-opsman]
     - get: configuration
+    - get: state
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -305,7 +313,7 @@ jobs:
     file: platform-automation-tasks/tasks/create-vm.yml
     input_mapping:
       image: opsman-image
-      state: configuration
+      state: state
       config: configuration-interpolated
     params:
       VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
@@ -320,16 +328,16 @@ jobs:
             repository: configuration
             file-source: generated-state
           output_mapping:
-            repository-commit: configuration-commit
+            repository-commit: state-commit
           params:
             FILE_SOURCE_PATH: state.yml
             FILE_DESTINATION_PATH: ((pas.env_name))/state/state.yml
             GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@example.com"
             GIT_AUTHOR_NAME: "PCF Automation Bot"
             COMMIT_MESSAGE: 'Update state file'
-        - put: configuration
+        - put: state
           params:
-            repository: configuration-commit
+            repository: state-commit
             merge: true
   - task: configure-authentication
     image: platform-automation-image
@@ -386,7 +394,7 @@ jobs:
       ENV_FILE: ((pas.env_name))/env/env.yml
   - put: installation
     params:
-      file: installation/installation.zip
+      file: installation/*.zip
 
 - name: upgrade-opsman
   serial: true
@@ -406,6 +414,7 @@ jobs:
       passed: [ export-installation ]
     - get: configuration
       trigger: true
+    - get: state
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -414,7 +423,7 @@ jobs:
     file: platform-automation-tasks/tasks/upgrade-opsman.yml
     input_mapping:
       image: opsman-image
-      state: configuration
+      state: state
       config: configuration-interpolated
       env: configuration-interpolated
       vars: configuration-interpolated
