@@ -40,7 +40,6 @@ resources:
       service_account_key: ((gcp.gcp_service_account))
       buckets_location: ((gcp.buckets_location))
       dns_suffix: ((gcp.parent_zone.dns_suffix))
-      opsman_vm: false
       opsman_image_url: ""
       parent_managed_zone: ((gcp.parent_zone.name))
       email: ((pas.mysql_email))
@@ -87,28 +86,46 @@ resources:
   source:
     bucket: ((gcp.buckets.installation))
     json_key: ((gcp.gcp_service_account))
-    regexp: installation-(.*).zip
+    regexp: installation-((pas.env_name))-(.*).zip
 
 # configurations
 - name: pcf-automation-source
   type: git
   source:
-    private_key: ((github.private_key))
+    private_key: ((github.repos.pcf-automation-source.private_key))
     uri: ((github.repos.pcf-automation-source.uri))
     branch: master
 
 - name: configuration
   type: git
   source:
-    private_key: ((github.private_key))
+    private_key: ((github.repos.configuration.private_key))
     uri: ((github.repos.configuration.uri))
     branch: master
+    paths: 
+    - ((pas.env_name))/*
 
 - name: state
   type: git
   source:
-    private_key: ((github.private_key))
+    private_key: ((github.repos.state.private_key))
+    uri: ((github.repos.state.uri))
+    branch: master
+    paths: 
+    - ((pas.env_name))/*
+
+- name: configuration-repo
+  type: git
+  source:
+    private_key: ((github.repos.configuration.private_key))
     uri: ((github.repos.configuration.uri))
+    branch: master
+
+- name: state-repo
+  type: git
+  source:
+    private_key: ((github.repos.state.private_key))
+    uri: ((github.repos.state.uri))
     branch: master
 
 # triggers used to have jobs do something in a timely manner
@@ -124,36 +141,21 @@ resources:
     interval: 24h
 
 jobs:
-- name: terraforming-gcp
-  serial: true
-  public: false
-  plan:
-  - get: pcf-automation-source
-    trigger: true
-  - put: env-state-gcp
-    attempts: 2
-    params:
-      env_name: ((pas.env_name))
-      terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
-      override_files:
-        - pcf-automation-source/terraform_override_files/dns_override.tf
-        - pcf-automation-source/terraform_override_files/acme_override.tf
-        - pcf-automation-source/terraform_override_files/output_override.tf
-      delete_on_failure: false
 
-- name: configuration
+- name: bootstrap-configuration
   serial: true
   public: false
   plan:
   - aggregate:
-    - get: pcf-automation-source
+    - get: one-time-trigger
       trigger: true
-      passed: [terraforming-gcp]
-    - get: configuration
-    - get: env-state-gcp
+    - get: pcf-automation-source
+    - get: configuration-repo
+    - get: state-repo
   - task: add-new-templates
     input_mapping:
-      config: configuration
+      config: configuration-repo
+      state: state-repo
       pcf-automation: pcf-automation-source
     params:
       ENV_NAME: ((pas.env_name))
@@ -168,28 +170,63 @@ jobs:
           repository: alpine/git
       inputs:
         - name: config
+        - name: state
         - name: pcf-automation
       outputs:
         - name: config-commit
+        - name: state-commit
       run:
         path: /bin/sh
         args:
           - -c
           - |
               set -eux
-              git clone config config-commit
-              mkdir -p config-commit/$ENV_NAME/state
-              touch config-commit/$ENV_NAME/state/state.yml
-              cp -a pcf-automation/templates/* config-commit/$ENV_NAME
               git config --global user.email "$GIT_AUTHOR_EMAIL"
               git config --global user.name "$GIT_AUTHOR_NAME"
+              git clone config config-commit
+              mkdir -p config-commit/$ENV_NAME
+              cp -a pcf-automation/templates/* config-commit/$ENV_NAME
+              cp -a pcf-automation/terraforming-gcp config-commit/$ENV_NAME
+              cp -a pcf-automation/terraform_override_files config-commit/$ENV_NAME
               cd config-commit
               git add -A
               git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
+              cd ..
+              git clone state state-commit
+              mkdir -p state-commit/$ENV_NAME/state
+              touch state-commit/$ENV_NAME/state/state.yml
+              cd state-commit
+              git add -A
+              git diff-index --quiet HEAD || git commit -m "Created empty state file"
   - put: configuration
     params:
       repository: config-commit
       merge: true
+  - put: state
+    params:
+      repository: state-commit
+      merge: true
+
+- name: terraforming-gcp
+  serial: true
+  public: false
+  plan:
+  - get: configuration
+    trigger: true
+  - get: pcf-automation-source
+    passed: [bootstrap-configuration]
+  - put: env-state-gcp
+    attempts: 2
+    params:
+      env_name: ((pas.env_name))
+      terraform_source: configuration/((pas.env_name))/terraforming-gcp/terraforming-pas
+      override_files:
+        - configuration/((pas.env_name))/terraform_override_files/dns_override.tf
+        - configuration/((pas.env_name))/terraform_override_files/acme_override.tf
+        - configuration/((pas.env_name))/terraform_override_files/output_override.tf
+      delete_on_failure: false
+
+
 - name: fetch-platform-automation
   # We use the pivnet resource to bootstrap the pipeline,
   # and because this product is part of the pipeline, not the foundation
@@ -217,9 +254,11 @@ jobs:
       params:
         unpack: true
     - get: configuration
-      passed: [configuration]
+      trigger: true
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
     - get: daily-trigger
       trigger: true
   - &interpolate
@@ -248,12 +287,13 @@ jobs:
       VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
     input_mapping:
       config: configuration-interpolated
-  - aggregate:
-    - put: opsman-image
-      params:
-        file: downloaded-product/*
+  - put: opsman-image
+    params:
+      file: downloaded-product/*
 
 - name: fetch-pas
+  serial: true
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -263,7 +303,8 @@ jobs:
       params:
         unpack: true
     - get: configuration
-      passed: [configuration]
+      trigger: true
+      passed: [fetch-opsman]
     - get: pcf-automation-source
     - get: env-state-gcp
     - get: daily-trigger
@@ -291,7 +332,9 @@ jobs:
 
 - name: install-opsman
   serial: true
-  serial_groups: [ install ]
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -326,7 +369,7 @@ jobs:
           image: platform-automation-image
           file: platform-automation-tasks/tasks/make-git-commit.yml
           input_mapping:
-            repository: configuration
+            repository: state
             file-source: generated-state
           output_mapping:
             repository-commit: state-commit
@@ -371,10 +414,11 @@ jobs:
 
 - name: export-installation
   serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
-    - get: daily-trigger
-      trigger: true
     - get: platform-automation-image
       params:
         unpack: true
@@ -383,10 +427,12 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [ configuration ]
+      passed:
+      - fetch-pas
     - get: pcf-automation-source
     - get: env-state-gcp
-      passed: [ install-opsman ]
+      passed:
+      - install-opsman
   - <<: *interpolate
   - task: export-installation
     image: platform-automation-image
@@ -401,7 +447,9 @@ jobs:
 
 - name: upgrade-opsman
   serial: true
-  serial_groups: [ install ]
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -411,10 +459,10 @@ jobs:
       params:
         unpack: true
     - get: opsman-image
-    - get: installation
     - get: configuration
       trigger: true
       passed: [ export-installation ]
+    - get: installation
     - get: state
     - get: pcf-automation-source
     - get: env-state-gcp
@@ -428,6 +476,7 @@ jobs:
       config: configuration-interpolated
       env: configuration-interpolated
       vars: configuration-interpolated
+      installation: installation
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
       VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
@@ -442,8 +491,40 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
+- name: upload-stemcell
+  serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: pas-stemcell
+    - get: configuration
+      trigger: true
+      passed: [ upgrade-opsman ]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upload-pas-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      env: configuration-interpolated
+      stemcell: pas-stemcell
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
 - name: upload-and-stage-pas
   serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -453,10 +534,9 @@ jobs:
       params:
         unpack: true
     - get: pas-product
-      trigger: true
     - get: configuration
       trigger: true
-      passed: [ upgrade-opsman ]
+      passed: [ upload-stemcell ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -477,35 +557,11 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
-- name: upload-stemcell
-  serial: true
-  plan:
-  - aggregate:
-    - get: platform-automation-image
-      params:
-        unpack: true
-    - get: platform-automation-tasks
-      params:
-        unpack: true
-    - get: pas-stemcell
-      trigger: true
-    - get: configuration
-      trigger: true
-      passed: [ upgrade-opsman ]
-    - get: pcf-automation-source
-    - get: env-state-gcp
-  - <<: *interpolate
-  - task: upload-pas-stemcell
-    image: platform-automation-image
-    file: platform-automation-tasks/tasks/upload-stemcell.yml
-    input_mapping:
-      env: configuration-interpolated
-      stemcell: pas-stemcell
-    params:
-      ENV_FILE: ((pas.env_name))/env/env.yml
-
 - name: configure-pas
   serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -534,6 +590,9 @@ jobs:
 
 - name: apply-product-changes
   serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
   plan:
   - aggregate:
     - get: platform-automation-image
@@ -572,20 +631,21 @@ jobs:
       params:
         unpack: true
     - get: configuration
+    - get: state
+    - get: env-state-gcp
   - <<: *interpolate
-  - try:
-      task: delete-installation
-      image: platform-automation-image
-      file: platform-automation-tasks/tasks/delete-installation.yml
-      input_mapping:
-        env: configuration-interpolated
-      params:
-        ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: delete-installation
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/delete-installation.yml
+    input_mapping:
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
   - task: delete-vm
     image: platform-automation-image
     file: platform-automation-tasks/tasks/delete-vm.yml
     input_mapping:
-      state: configuration
+      state: state
       config: configuration-interpolated
     params:
       VARS_FILES: config/((pas.env_name))/config/opsman-vars.yml
@@ -597,19 +657,17 @@ jobs:
   public: false
   plan:
   - aggregate:
-    - get: pcf-automation-source
-      trigger: false
     - get: configuration
-#      passed:
-#      - destroy-installation
-    - get: env-state-gcp
+      passed:
+      - destroy-installation
+    - get: state
   - put: env-state-gcp
     params:
-      terraform_source: pcf-automation-source/terraforming-gcp/terraforming-pas
+      terraform_source: configuration/((pas.env_name))/terraforming-gcp/terraforming-pas
       override_files:
-        - pcf-automation-source/terraform_override_files/dns_override.tf
-        - pcf-automation-source/terraform_override_files/acme_override.tf
-        - pcf-automation-source/terraform_override_files/output_override.tf
+        - configuration/((pas.env_name))/terraform_override_files/dns_override.tf
+        - configuration/((pas.env_name))/terraform_override_files/acme_override.tf
+        - configuration/((pas.env_name))/terraform_override_files/output_override.tf
       delete_on_failure: true
       env_name: ((pas.env_name))
       action: destroy
@@ -618,6 +676,7 @@ jobs:
   - task: delete-config
     input_mapping:
       config: configuration
+      state: state
     params:
       ENV_NAME: ((pas.env_name))
       GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@banck.net"
@@ -631,31 +690,43 @@ jobs:
           repository: alpine/git
       inputs:
         - name: config
+        - name: state
       outputs:
         - name: config-commit
+        - name: state-commit
       run:
         path: /bin/sh
         args:
           - -c
           - |
               set -eux
-              git clone config config-commit
-              rm -rf config-commit/$ENV_NAME
               git config --global user.email "$GIT_AUTHOR_EMAIL"
               git config --global user.name "$GIT_AUTHOR_NAME"
+              git clone config config-commit
+              rm -rf config-commit/$ENV_NAME
               cd config-commit
+              git add -A
+              git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
+              cd ..
+              git clone state state-commit
+              rm -rf state-commit/$ENV_NAME
+              cd state-commit
               git add -A
               git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
   - put: configuration
     params:
       repository: config-commit
       merge: true
+  - put: state
+    params:
+      repository: state-commit
+      merge: true
 
 groups:
 - name: prepare
   jobs:
   - terraforming-gcp
-  - configuration
+  - bootstrap-configuration
   - fetch-platform-automation
 - name: fetch
   jobs:
