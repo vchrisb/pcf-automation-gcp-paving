@@ -135,11 +135,6 @@ resources:
   source:
     interval: 999999h
 
-- name: daily-trigger
-  type: time
-  source:
-    interval: 24h
-
 jobs:
 
 - name: bootstrap-configuration
@@ -259,8 +254,6 @@ jobs:
     - get: pcf-automation-source
     - get: env-state-gcp
       passed: [terraforming-gcp]
-    - get: daily-trigger
-      trigger: true
   - &interpolate
     task: interpolate-config
     file: pcf-automation-source/tasks/interpolate.yml
@@ -307,8 +300,6 @@ jobs:
       passed: [fetch-opsman]
     - get: pcf-automation-source
     - get: env-state-gcp
-    - get: daily-trigger
-      trigger: true
   - <<: *interpolate
   - task: download-pas-product-and-stemcell
     image: platform-automation-image

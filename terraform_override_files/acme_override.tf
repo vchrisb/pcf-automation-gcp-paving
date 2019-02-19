@@ -42,7 +42,7 @@ resource "acme_certificate" "certificate" {
     config {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT_FILE  = "${local_file.keyfile.filename}"
-      GCE_PROPAGATION_TIMEOUT   = 600
+      GCE_PROPAGATION_TIMEOUT   = "600"
     }
   }
 }
