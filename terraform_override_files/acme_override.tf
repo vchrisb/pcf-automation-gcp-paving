@@ -19,7 +19,10 @@ resource "acme_registration" "reg" {
   email_address   = "${var.email}"
 }
 
-resource "null_resource" "dns" {
+resource "null_resource" "dns-propagation-wait" {
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
   triggers {
       sys_domain  = "${module.pas.sys_domain}"
       apps_domain = "${module.pas.apps_domain}"
@@ -31,13 +34,13 @@ resource "acme_certificate" "certificate" {
   account_key_pem           = "${acme_registration.reg.account_key_pem}"
   common_name               = "${var.env_name}.${var.dns_suffix}"
   subject_alternative_names = "${formatlist("%s.${var.env_name}.${var.dns_suffix}", local.subdomains)}"
-  depends_on                = ["google_dns_record_set.nameserver","null_resource.dns"]
+  depends_on                = ["google_dns_record_set.nameserver","null_resource.dns-propagation-wait"]
   dns_challenge {
     provider                  = "gcloud"
     config {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
-      GCE_PROPAGATION_TIMEOUT   = "600"
+      GCE_PROPAGATION_TIMEOUT   = "300"
     }
   }
 }
