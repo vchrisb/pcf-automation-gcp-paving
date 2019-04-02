@@ -377,7 +377,7 @@ jobs:
     input_mapping:
       env: configuration-interpolated
     output_mapping:
-      configuration-interpolated: env
+      configuration-interpolated: env-modified
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
     config:
@@ -389,15 +389,16 @@ jobs:
       inputs:
         - name: env
       outputs:
-        - name: env
+        - name: env-modified
       run:
         path: /bin/sh
         args:
           - -c
           - |
               set -eux
-              printf '\n%s' "skip-ssl-validation: true" > env/$ENV_FILE
-              echo env/$ENV_FILE
+              git clone env env-modified
+              printf '\n%s' "skip-ssl-validation: true" > env-modified/$ENV_FILE
+              echo env-modified/$ENV_FILE
   - task: configure-authentication
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-authentication.yml

@@ -75,7 +75,7 @@ EOF
 }
 
 module "pas" {
-  ssl_certificate   = "${google_compute_ssl_certificate.pas-certificate.self_link}"
+  ssl_certificate   = "${google_compute_ssl_certificate.certificate.self_link}"
 }
 
 resource "acme_certificate" "opsman-certificate" {
