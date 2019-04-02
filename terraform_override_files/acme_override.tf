@@ -6,11 +6,6 @@ variable "email" {
   type = "string"
 }
 
-resource "local_file" "keyfile" {
-    content     = "${var.service_account_key}"
-    filename = "keyfile.json"
-}
-
 provider "acme" {
   server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
@@ -41,7 +36,7 @@ resource "acme_certificate" "certificate" {
     provider                  = "gcloud"
     config {
       GCE_PROJECT               = "${var.project}"
-      GCE_SERVICE_ACCOUNT_FILE  = "${local_file.keyfile.filename}"
+      GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
       GCE_PROPAGATION_TIMEOUT   = "600"
     }
   }
