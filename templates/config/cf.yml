@@ -31,12 +31,12 @@ product-properties:
     value: {{ (ds "data").sys_domain }}
   .diego_brain.starting_container_count_maximum:
     value: 200
-  .doppler.message_drain_buffer_size:
-    value: 10000
   .ha_proxy.skip_cert_verify:
     value: false
   .mysql.cli_history:
     value: true
+  .mysql.max_connections:
+    value: 3500
   .mysql.prevent_node_auto_rejoin:
     value: false
   .mysql.remote_admin_access:
@@ -66,6 +66,7 @@ product-properties:
   .properties.autoscale_scaling_interval_in_seconds:
     value: 35
   .properties.cc_api_rate_limit:
+    selected_option: disable
     value: disable
   .properties.cc_logging_level:
     value: info
@@ -81,16 +82,18 @@ product-properties:
     value: apps.internal
   .properties.cloud_controller_default_health_check_timeout:
     value: 60
-  .properties.cloud_controller_default_stack:
-    value: default
   .properties.cloud_controller_temporary_disable_deployments:
     value: false
   .properties.container_networking:
+    selected_option: enable
     value: enable
   .properties.container_networking_interface_plugin:
+    selected_option: silk
     value: silk
   .properties.container_networking_interface_plugin.silk.enable_log_traffic:
     value: false
+  .properties.container_networking_interface_plugin.silk.enable_policy_enforcement:
+    value: true
   .properties.container_networking_interface_plugin.silk.iptables_accepted_udp_logs_per_sec:
     value: 100
   .properties.container_networking_interface_plugin.silk.iptables_denied_logs_per_sec:
@@ -100,6 +103,7 @@ product-properties:
   .properties.container_networking_interface_plugin.silk.vtep_port:
     value: 4789
   .properties.credhub_database:
+    selected_option: internal_mysql
     value: internal_mysql
   .properties.credhub_hsm_provider_client_certificate:
     value:
@@ -118,11 +122,8 @@ product-properties:
   .properties.diego_database_max_open_connections:
     value: 100
   .properties.diego_log_timestamp_format:
+    selected_option: rfc3339
     value: rfc3339
-  .properties.enable_cf_metric_name:
-    value: false
-  .properties.enable_log_cache:
-    value: true
   .properties.enable_smb_volume_driver:
     value: false
   .properties.enable_tls_to_internal_pxc:
@@ -130,19 +131,26 @@ product-properties:
   .properties.experimental_dynamic_egress_enforcement:
     value: false
   .properties.garden_disk_cleanup:
+    selected_option: reserved
     value: reserved
   .properties.gorouter_ssl_ciphers:
     value: ECDHE-RSA-AES128-GCM-SHA256:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
   .properties.haproxy_client_cert_validation:
+    selected_option: none
     value: none
   .properties.haproxy_forward_tls:
+    selected_option: disable
     value: disable
   .properties.haproxy_hsts_support:
+    selected_option: disable
     value: disable
   .properties.haproxy_max_buffer_size:
     value: 16384
   .properties.haproxy_ssl_ciphers:
     value: DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384
+  .properties.istio:
+    selected_option: disable
+    value: disable
   .properties.locket_database_max_open_connections:
     value: 200
   .properties.metric_registrar_blacklisted_tags:
@@ -152,6 +160,7 @@ product-properties:
   .properties.metric_registrar_scrape_interval_in_seconds:
     value: 35
   .properties.mysql_activity_logging:
+    selected_option: enable
     value: enable
   .properties.mysql_activity_logging.enable.audit_logging_events:
     value: connect,query
@@ -168,6 +177,7 @@ product-properties:
   .properties.networkpolicyserverinternal_database_max_open_connections:
     value: 200
   .properties.nfs_volume_driver:
+    selected_option: enable
     value: enable
   .properties.nfs_volume_driver.enable.ldap_service_account_password:
     value:
@@ -183,26 +193,33 @@ product-properties:
   .properties.push_apps_manager_poll_interval:
     value: 30
   .properties.route_integrity:
+    selected_option: tls_verify
     value: tls_verify
   .properties.route_services:
+    selected_option: enable
     value: enable
   .properties.route_services.enable.ignore_ssl_cert_verification:
     value: false
   .properties.router_backend_max_conn:
     value: 500
   .properties.router_client_cert_validation:
+    selected_option: request
     value: request
   .properties.router_enable_proxy:
     value: false
   .properties.router_keepalive_connections:
+    selected_option: enable
     value: enable
   .properties.routing_disable_http:
     value: false
   .properties.routing_log_client_ips:
+    selected_option: log_client_ips
     value: log_client_ips
   .properties.routing_minimum_tls_version:
+    selected_option: tls_v1_2
     value: tls_v1_2
   .properties.routing_tls_termination:
+    selected_option: load_balancer
     value: load_balancer
   .properties.saml_signature_algorithm:
     value: SHA256
@@ -213,6 +230,7 @@ product-properties:
   .properties.silk_database_max_open_connections:
     value: 200
   .properties.smoke_tests:
+    selected_option: on_demand
     value: on_demand
   .properties.smtp_auth_mechanism:
     value: plain
@@ -227,20 +245,25 @@ product-properties:
   .properties.syslog_metrics_to_syslog_enabled:
     value: true
   .properties.syslog_tls:
+    selected_option: disabled
     value: disabled
   .properties.syslog_use_tcp_for_file_forwarding_local_transport:
     value: false
   .properties.system_blobstore:
+    selected_option: internal
     value: internal
   .properties.system_blobstore_ccdroplet_max_staged_droplets_stored:
     value: 2
   .properties.system_blobstore_ccpackage_max_valid_packages_stored:
     value: 2
   .properties.system_database:
+    selected_option: internal_pxc
     value: internal_pxc
   .properties.tcp_routing:
+    selected_option: disable
     value: disable
   .properties.uaa:
+    selected_option: internal
     value: internal
   .properties.uaa.internal.password_expires_after_months:
     value: 0
@@ -257,6 +280,7 @@ product-properties:
   .properties.uaa.internal.password_min_uppercase:
     value: 0
   .properties.uaa_database:
+    selected_option: internal_mysql
     value: internal_mysql
   .properties.uaa_session_cookie_max_age:
     value: 28800
@@ -279,9 +303,7 @@ product-properties:
   .router.request_timeout_in_seconds:
     value: 900
   .uaa.apps_manager_access_token_lifetime:
-    value: 1209600
-  .uaa.apps_manager_refresh_token_lifetime:
-    value: 1209600
+    value: 3600
   .uaa.cf_cli_access_token_lifetime:
     value: 7200
   .uaa.cf_cli_refresh_token_lifetime:
@@ -365,6 +387,16 @@ resource-config:
     instance_type:
       id: automatic
     internet_connected: true
+  istio_control:
+    instances: 0
+    instance_type:
+      id: automatic
+    internet_connected: true
+  istio_router:
+    instances: 0
+    instance_type:
+      id: automatic
+    internet_connected: true
   loggregator_trafficcontroller:
     instances: automatic
     instance_type:
@@ -396,6 +428,11 @@ resource-config:
     instances: automatic
     persistent_disk:
       size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  route_syncer:
+    instances: 0
     instance_type:
       id: automatic
     internet_connected: true
