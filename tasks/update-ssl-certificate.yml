@@ -14,7 +14,11 @@ run:
   args:
   - "-c"
   - |
+    set -eu
     cat /var/version && echo ""
     curl -L -o jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
     chmod +x jq
     om --env env/"${ENV_FILE}" update-ssl-certificate --certificate-pem "$(./jq -r .opsman_ssl_cert terraform-output/metadata)" --private-key-pem "$(./jq -r .opsman_ssl_private_key terraform-output/metadata)"
+    export OPSMAN_DOMAIN="$(./jq -r .ops_manager_dns terraform-output/metadata)"
+    timeout 120 /bin/sh -c -- 'while ! echo | openssl s_client -connect $OPSMAN_DOMAIN:443 -servername $OPSMAN_DOMAIN -verify_return_error -verify 3 -quiet 2>/dev/null;do sleep 5;done'
+    echo | openssl s_client -connect $OPSMAN_DOMAIN:443 -servername $OPSMAN_DOMAIN 2>/dev/null | openssl x509 -noout -subject -dates
