@@ -65,7 +65,7 @@ resources:
   source:
     bucket: ((gcp.buckets.pivnet_products))
     json_key: ((gcp.gcp_service_account))
-    regexp: OpsManager(.*)onGCP.yml
+    regexp: ops-manager-gcp-(.*).yml
 
 - name: pas-product
   type: gcs-resource
@@ -211,7 +211,6 @@ jobs:
   - get: pcf-automation-source
     passed: [bootstrap-configuration]
   - put: env-state-gcp
-    attempts: 2
     params:
       env_name: ((pas.env_name))
       terraform_source: configuration/((pas.env_name))/terraforming-gcp/terraforming-pas
