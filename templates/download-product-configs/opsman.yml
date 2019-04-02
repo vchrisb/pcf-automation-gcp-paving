@@ -1,5 +1,5 @@
 ---
 pivnet-api-token: ((pivnet-api-token))
-pivnet-file-glob: "*onGCP.yml"
+pivnet-file-glob: "ops-manager-gcp-*.yml"
 pivnet-product-slug: ops-manager
-product-version: 2.4.3
+product-version: 2.5.0
