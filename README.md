@@ -4,6 +4,12 @@ This repo contains a concourse pipeline and tasks to automatically deploy Pivota
 It is mostly meant to be used for testing, as credentials handling could be improved.
 It is using [terraforming-gcp](https://github.com/pivotal-cf/terraforming-gcp) and [Platform Automation](http://docs-platform-automation.cfapps.io/platform-automation/v2.0/index.html) to do so.
 
+# Features
+
+* the pipeline can be deployed multiple times with different values for `env_name`
+  * for each pipeline there will be a dedicated subdomain created in gcp: `env_name.dns_suffix`
+* letsencrypt certificates are generated for PAS and Ops Manager
+
 # Reqirements
 
 * GCP account
