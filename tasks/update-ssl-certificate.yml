@@ -1,0 +1,18 @@
+---
+platform: linux
+
+inputs:
+- name: env # contains the env file with target OpsMan Information
+- name: terraform-output
+params:
+  ENV_FILE: env.yml
+  # - Filepath of the env config YAML
+  # - The path is relative to root of the `env` input
+
+run:
+  path: bash
+  args:
+  - "-c"
+  - |
+    cat /var/version && echo ""
+    om --env env/"${ENV_FILE}" update-ssl-certificate --certificate-pem "$(jq .opsman_ssl_cert terraform-output/metadata)" --private-key-pem "$(jq .opsman_ssl_private_key terraform-output/metadata)"

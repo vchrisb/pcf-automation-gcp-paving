@@ -373,6 +373,31 @@ jobs:
           params:
             repository: state-commit
             merge: true
+  - task: skip_ssl_validation
+    input_mapping:
+      env: configuration-interpolated
+    output_mapping:
+      configuration-interpolated: env
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine/git
+      inputs:
+        - name: env
+      outputs:
+        - name: env
+      run:
+        path: /bin/sh
+        args:
+          - -c
+          - |
+              set -eux
+              printf '\n%s' "skip-ssl-validation: true" > env/$ENV_FILE
+              echo env/$ENV_FILE
   - task: configure-authentication
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-authentication.yml
@@ -397,6 +422,14 @@ jobs:
     image: platform-automation-image
     file: platform-automation-tasks/tasks/apply-director-changes.yml
     input_mapping:
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: update-ssl-certificate
+    image: platform-automation-image
+    file: pcf-automation-source/tasks/update-ssl-certificate.yml
+    input_mapping:
+      terraform-output: env-state-gcp
       env: configuration-interpolated
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
