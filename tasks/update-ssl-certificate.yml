@@ -15,4 +15,6 @@ run:
   - "-c"
   - |
     cat /var/version && echo ""
-    om --env env/"${ENV_FILE}" update-ssl-certificate --certificate-pem "$(jq .opsman_ssl_cert terraform-output/metadata)" --private-key-pem "$(jq .opsman_ssl_private_key terraform-output/metadata)"
+    curl -L -o jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+    chmod +x jq
+    om --env env/"${ENV_FILE}" update-ssl-certificate --certificate-pem "$(./jq .opsman_ssl_cert terraform-output/metadata)" --private-key-pem "$(./jq .opsman_ssl_private_key terraform-output/metadata)"

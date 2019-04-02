@@ -41,7 +41,7 @@ resource "acme_certificate" "pas-certificate" {
     config {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
-      GCE_PROPAGATION_TIMEOUT   = "300"
+      GCE_PROPAGATION_TIMEOUT   = "600"
     }
   }
 }
@@ -87,7 +87,7 @@ resource "acme_certificate" "opsman-certificate" {
     config {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
-      GCE_PROPAGATION_TIMEOUT   = "300"
+      GCE_PROPAGATION_TIMEOUT   = "600"
     }
   }
 }
