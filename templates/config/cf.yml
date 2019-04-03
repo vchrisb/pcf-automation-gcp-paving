@@ -77,7 +77,7 @@ product-properties:
   .properties.cf_networking_database_connection_timeout:
     value: 120
   .properties.cf_networking_enable_space_developer_self_service:
-    value: false
+    value: true
   .properties.cf_networking_internal_domain:
     value: apps.internal
   .properties.cloud_controller_default_health_check_timeout:
@@ -127,9 +127,9 @@ product-properties:
   .properties.enable_smb_volume_driver:
     value: false
   .properties.enable_tls_to_internal_pxc:
-    value: false
+    value: true
   .properties.experimental_dynamic_egress_enforcement:
-    value: false
+    value: true
   .properties.garden_disk_cleanup:
     selected_option: reserved
     value: reserved
@@ -193,8 +193,8 @@ product-properties:
   .properties.push_apps_manager_poll_interval:
     value: 30
   .properties.route_integrity:
-    selected_option: tls_verify
-    value: tls_verify
+    selected_option: mutual_tls_verify
+    value: mutual_tls_verify
   .properties.route_services:
     selected_option: enable
     value: enable
