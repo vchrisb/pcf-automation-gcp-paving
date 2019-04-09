@@ -1,6 +1,6 @@
 locals {
     subdomains    = ["*.apps", "*.sys", "*.login.sys", "*.uaa.sys"]
-    mesh_subdomains = ["*.mesh"]
+    mesh_subdomains = ["*.mesh.apps"]
 }
 
 variable "email" {
