@@ -78,9 +78,6 @@ EOF
   }
 }
 
-module "pas" {
-  ssl_certificate   = "${google_compute_ssl_certificate.certificate.self_link}"
-}
 
 ## CF mesh certificate
 
@@ -127,9 +124,6 @@ EOF
   }
 }
 
-module "pas" {
-  mesh_ssl_certificate   = "${google_compute_ssl_certificate.mesh-certificate.self_link}"
-}
 
 ### Opsman
 
@@ -158,4 +152,11 @@ EOF
 output "opsman_ssl_private_key" {
   sensitive = true
   value     = "${acme_certificate.opsman-certificate.private_key_pem}"
+}
+
+## update module
+
+module "pas" {
+  ssl_certificate   = "${google_compute_ssl_certificate.certificate.self_link}"
+  mesh_ssl_certificate   = "${google_compute_ssl_certificate.mesh-certificate.self_link}"
 }
