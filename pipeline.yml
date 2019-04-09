@@ -453,6 +453,7 @@ jobs:
       - fetch-pas
     - get: pcf-automation-source
     - get: env-state-gcp
+    - get: one-time-trigger
       passed:
       - install-opsman
   - <<: *interpolate
