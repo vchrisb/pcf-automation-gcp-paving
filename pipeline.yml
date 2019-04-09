@@ -43,6 +43,8 @@ resources:
       opsman_image_url: ""
       parent_managed_zone: ((gcp.parent_zone.name))
       email: ((pas.mysql_email))
+      create_mesh_lb: ((pas.create_mesh_lb))
+      create_tcp_router: ((pas.create_tcp_router))
 
 # buckets
 
@@ -686,6 +688,7 @@ jobs:
   plan:
   - aggregate:
     - get: configuration
+      trigger: true
       passed:
       - destroy-installation
     - get: state
