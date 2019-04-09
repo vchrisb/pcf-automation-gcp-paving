@@ -149,8 +149,16 @@ product-properties:
   .properties.haproxy_ssl_ciphers:
     value: DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384
   .properties.istio:
-    selected_option: disable
-    value: disable
+    selected_option: enalble
+    value: enable
+  .properties.istio_frontend_tls_keypairs:
+    value:
+    - certificate:
+        cert_pem: |
+{{ (ds "data").mesh_ssl_cert | strings.Indent 10 }}
+        private_key_pem: |
+{{ (ds "data").mesh_ssl_private_key | strings.Indent 10 }}
+      name: istio-cert  
   .properties.locket_database_max_open_connections:
     value: 200
   .properties.metric_registrar_blacklisted_tags:
@@ -390,15 +398,17 @@ resource-config:
       id: automatic
     internet_connected: true
   istio_control:
-    instances: 0
+    instances: automatic
     instance_type:
       id: automatic
     internet_connected: true
   istio_router:
-    instances: 0
+    instances: automatic
     instance_type:
       id: automatic
     internet_connected: true
+    elb_names:
+    - http:{{ (ds "data").http_mesh_lb_backend_name }}
   loggregator_trafficcontroller:
     instances: automatic
     instance_type:
@@ -434,7 +444,7 @@ resource-config:
       id: automatic
     internet_connected: true
   route_syncer:
-    instances: 0
+    instances: automatic
     instance_type:
       id: automatic
     internet_connected: true
