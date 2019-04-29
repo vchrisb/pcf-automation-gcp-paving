@@ -76,12 +76,26 @@ resources:
     json_key: ((gcp.gcp_service_account))
     regexp: cf-(.*).pivotal
 
-- name: pas-stemcell
+- name: stemcell-170
   type: gcs-resource
   source:
     bucket: ((gcp.buckets.pivnet_products))
     json_key: ((gcp.gcp_service_account))
-    regexp: pas-stemcell/light-bosh-stemcell-(.*)-google.*\.tgz #light-bosh-stemcell-170.24-google-kvm-ubuntu-xenial-go_agent.tgz
+    regexp: stemcell/light-bosh-stemcell-170.(.*)-google-kvm-ubuntu-xenial-go_agent.tgz #light-bosh-stemcell-170.51-google-kvm-ubuntu-xenial-go_agent.tgz
+
+- name: healthwatch-product
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: p-healthwatch-(.*).pivotal
+
+- name: metrics-product
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: apm-(.*).pivotal
 
 - name: installation
   type: gcs-resource
@@ -302,7 +316,7 @@ jobs:
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
-  - task: download-pas-product-and-stemcell
+  - task: download-stemcell
     image: platform-automation-image
     file: platform-automation-tasks/tasks/download-product.yml
     params:
@@ -310,15 +324,100 @@ jobs:
       VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
     input_mapping:
       config: configuration-interpolated
-    output_mapping:
-      downloaded-stemcell: pas-stemcell
   - aggregate:
     - put: pas-product
       params:
         file: downloaded-product/*.pivotal
-    - put: pas-stemcell
+
+- name: fetch-stemcell-170
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
       params:
-        file: pas-stemcell/*.tgz
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-opsman]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: download-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/stemcell-170.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: stemcell-170
+      params:
+        file: downloaded-product/*.tgz
+
+- name: fetch-healthwatch
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-opsman]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: download-healthwatch-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/healthwatch.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: healthwatch-product
+      params:
+        file: downloaded-product/*.pivotal
+  
+- name: fetch-metrics
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-opsman]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: download-metrics-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/metrics.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: metrics-product
+      params:
+        file: downloaded-product/*.pivotal
 
 # INSTALL JOBS
 
@@ -522,7 +621,7 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
-- name: upload-stemcell
+- name: upload-stemcell-170
   serial: true
   serial_groups: 
   - upgrade 
@@ -535,19 +634,20 @@ jobs:
     - get: platform-automation-tasks
       params:
         unpack: true
-    - get: pas-stemcell
+    - get: stemcell-170
+      passed: [ fetch-stemcell-170 ]
     - get: configuration
       trigger: true
       passed: [ upgrade-opsman ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
-  - task: upload-pas-stemcell
+  - task: upload-stemcell
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-stemcell.yml
     input_mapping:
       env: configuration-interpolated
-      stemcell: pas-stemcell
+      stemcell: stemcell-170
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
@@ -565,9 +665,10 @@ jobs:
       params:
         unpack: true
     - get: pas-product
+      passed: [ fetch-pas ]
     - get: configuration
       trigger: true
-      passed: [ upload-stemcell ]
+      passed: [ upload-stemcell-170 ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -588,6 +689,82 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
+- name: upload-and-stage-healthwatch
+  serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: healthwatch-product
+      passed: [ fetch-healthwatch ]
+    - get: configuration
+      trigger: true
+      passed: [ upload-and-stage-pas ]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upload-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-product.yml
+    input_mapping:
+      product: healthwatch-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: stage-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/stage-product.yml
+    input_mapping:
+      product: healthwatch-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
+- name: upload-and-stage-metrics
+  serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: metrics-product
+      passed: [ fetch-metrics ]
+    - get: configuration
+      trigger: true
+      passed: [ upload-and-stage-healthwatch ]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upload-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-product.yml
+    input_mapping:
+      product: metrics-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: stage-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/stage-product.yml
+    input_mapping:
+      product: metrics-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
 - name: configure-pas
   serial: true
   serial_groups: 
@@ -604,7 +781,7 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [ upload-and-stage-pas ]
+      passed: [ upload-and-stage-metrics ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -763,7 +940,10 @@ groups:
 - name: fetch
   jobs:
   - fetch-opsman
+  - fetch-stemcell-170
   - fetch-pas
+  - fetch-healthwatch
+  - fetch-metrics
 - name: install
   jobs:
   - install-opsman
@@ -771,8 +951,10 @@ groups:
   jobs:
   - export-installation
   - upgrade-opsman
+  - upload-stemcell-170
   - upload-and-stage-pas
-  - upload-stemcell
+  - upload-and-stage-healthwatch
+  - upload-and-stage-metrics
   - configure-pas
   - apply-product-changes
 

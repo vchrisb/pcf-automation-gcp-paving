@@ -1,0 +1,5 @@
+---
+pivnet-api-token: ((pivnet-api-token))
+pivnet-file-glob: "apm-*pivotal"
+pivnet-product-slug: apm
+product-version: 1.6.1

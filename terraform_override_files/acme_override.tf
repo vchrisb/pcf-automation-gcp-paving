@@ -83,7 +83,7 @@ EOF
 
 resource "acme_certificate" "pas-mesh-certificate" {
   account_key_pem           = "${acme_registration.reg.account_key_pem}"
-  common_name               = "mesh.${var.env_name}.${var.dns_suffix}"
+  common_name               = "mesh.apps.${var.env_name}.${var.dns_suffix}"
   subject_alternative_names = "${formatlist("%s.${var.env_name}.${var.dns_suffix}", local.mesh_subdomains)}"
   depends_on                = ["google_dns_record_set.nameserver","null_resource.dns-propagation-wait"]
   dns_challenge {

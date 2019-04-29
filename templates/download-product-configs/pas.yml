@@ -3,4 +3,3 @@ pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "cf-*pivotal"
 pivnet-product-slug: elastic-runtime
 product-version: 2.5.0
-stemcell-iaas: google
