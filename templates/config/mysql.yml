@@ -79,9 +79,9 @@ product-properties:
     value: enable
   .properties.plan3_selector.galera.az_multi_select:
     value:
+    - {{ index (ds "data").azs 0 }}
     - {{ index (ds "data").azs 1 }}
     - {{ index (ds "data").azs 2 }}
-    - {{ index (ds "data").azs 3 }}
   .properties.plan3_selector.galera.description:
     value: This plan provides a large dedicated MySQL Cluster.
   .properties.plan3_selector.galera.instance_limit:
