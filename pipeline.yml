@@ -319,9 +319,10 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [fetch-opsman]
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
   - <<: *interpolate
   - task: download-stemcell
     image: platform-automation-image
@@ -349,9 +350,10 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [fetch-opsman]
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
   - <<: *interpolate
   - task: download-stemcell
     image: platform-automation-image
@@ -379,9 +381,10 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [fetch-opsman]
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
   - <<: *interpolate
   - task: download-stemcell
     image: platform-automation-image
@@ -409,9 +412,10 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [fetch-opsman]
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
   - <<: *interpolate
   - task: download-healthwatch-product-and-stemcell
     image: platform-automation-image
@@ -439,9 +443,10 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [fetch-opsman]
+      passed: [terraforming-gcp]
     - get: pcf-automation-source
     - get: env-state-gcp
+      passed: [terraforming-gcp]
   - <<: *interpolate
   - task: download-metrics-product-and-stemcell
     image: platform-automation-image
@@ -586,7 +591,7 @@ jobs:
     - get: configuration
       trigger: true
       passed:
-      - fetch-pas
+      - fetch-opsman
     - get: pcf-automation-source
     - get: env-state-gcp
     - get: one-time-trigger
@@ -672,10 +677,11 @@ jobs:
       params:
         unpack: true
     - get: stemcell-170
-      passed: [ fetch-stemcell-170 ]
     - get: configuration
       trigger: true
-      passed: [ upgrade-opsman ]
+      passed: 
+      - upgrade-opsman
+      - fetch-stemcell-170
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -702,10 +708,11 @@ jobs:
       params:
         unpack: true
     - get: stemcell-250
-      passed: [ fetch-stemcell-250 ]
     - get: configuration
       trigger: true
-      passed: [ upload-stemcell-170 ]
+      passed: 
+      - upload-stemcell-170
+      - fetch-stemcell-250
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -718,7 +725,7 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
-- name: upload-and-stage-pas
+- name: upload-stage-configure-pas
   serial: true
   serial_groups: 
   - upgrade 
@@ -732,10 +739,11 @@ jobs:
       params:
         unpack: true
     - get: pas-product
-      passed: [ fetch-pas ]
     - get: configuration
       trigger: true
-      passed: [ upload-stemcell-250 ]
+      passed: 
+      - upload-stemcell-250
+      - fetch-pas
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -755,8 +763,18 @@ jobs:
       env: configuration-interpolated
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      config: configuration-interpolated
+      env: configuration-interpolated
+    params:
+      CONFIG_FILE: ((pas.env_name))/config/cf.yml
+      VARS_FILES: config/((pas.env_name))/config/cf-vars.yml
+      ENV_FILE: ((pas.env_name))/env/env.yml
 
-- name: upload-and-stage-healthwatch
+- name: upload-stage-configure-healthwatch
   serial: true
   serial_groups: 
   - upgrade 
@@ -770,10 +788,11 @@ jobs:
       params:
         unpack: true
     - get: healthwatch-product
-      passed: [ fetch-healthwatch ]
     - get: configuration
       trigger: true
-      passed: [ upload-and-stage-pas ]
+      passed: 
+      - upload-stage-configure-pas
+      - fetch-healthwatch
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -793,8 +812,17 @@ jobs:
       env: configuration-interpolated
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      config: configuration-interpolated
+      env: configuration-interpolated
+    params:
+      CONFIG_FILE: ((pas.env_name))/config/healthwatch.yml
+      ENV_FILE: ((pas.env_name))/env/env.yml
 
-- name: upload-and-stage-metrics
+- name: upload-stage-configure-metrics
   serial: true
   serial_groups: 
   - upgrade 
@@ -808,10 +836,11 @@ jobs:
       params:
         unpack: true
     - get: metrics-product
-      passed: [ fetch-metrics ]
     - get: configuration
       trigger: true
-      passed: [ upload-and-stage-healthwatch ]
+      passed: 
+      - upload-stage-configure-healthwatch
+      - fetch-metrics
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -831,36 +860,14 @@ jobs:
       env: configuration-interpolated
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
-
-- name: configure-pas
-  serial: true
-  serial_groups: 
-  - upgrade 
-  public: false
-  plan:
-  - aggregate:
-    - get: platform-automation-image
-      params:
-        unpack: true
-      trigger: true
-    - get: platform-automation-tasks
-      params:
-        unpack: true
-    - get: configuration
-      trigger: true
-      passed: [ upload-and-stage-metrics ]
-    - get: pcf-automation-source
-    - get: env-state-gcp
-  - <<: *interpolate
-  - task: configure-pas
+  - task: configure-product
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-product.yml
     input_mapping:
       config: configuration-interpolated
       env: configuration-interpolated
     params:
-      CONFIG_FILE: ((pas.env_name))/config/cf.yml
-      VARS_FILES: config/((pas.env_name))/config/cf-vars.yml
+      CONFIG_FILE: ((pas.env_name))/config/metrics.yml
       ENV_FILE: ((pas.env_name))/env/env.yml
 
 - name: apply-product-changes
@@ -878,7 +885,7 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [ configure-pas ]
+      passed: [ upload-stage-configure-metrics ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -1021,10 +1028,9 @@ groups:
   - upgrade-opsman
   - upload-stemcell-170
   - upload-stemcell-250
-  - upload-and-stage-pas
-  - upload-and-stage-healthwatch
-  - upload-and-stage-metrics
-  - configure-pas
+  - upload-stage-configure-pas
+  - upload-stage-configure-healthwatch
+  - upload-stage-configure-metrics
   - apply-product-changes
 
 - name: destroy

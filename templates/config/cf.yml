@@ -149,7 +149,7 @@ product-properties:
   .properties.haproxy_ssl_ciphers:
     value: DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384
   .properties.istio:
-    selected_option: enalble
+    selected_option: enable
     value: enable
   .properties.istio_frontend_tls_keypairs:
     value:
