@@ -9,6 +9,10 @@ It is using [terraforming-gcp](https://github.com/pivotal-cf/terraforming-gcp) a
 * the pipeline can be deployed multiple times with different values for `env_name`
   * for each pipeline there will be a dedicated subdomain created in gcp: `env_name.dns_suffix`
 * letsencrypt certificates are generated for PAS and Ops Manager
+* Tiles deployed
+  * Healthwatch
+  * PCF Metrics
+  * MySQL
 
 # Reqirements
 
