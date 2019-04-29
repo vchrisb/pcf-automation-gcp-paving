@@ -83,6 +83,13 @@ resources:
     json_key: ((gcp.gcp_service_account))
     regexp: stemcell/light-bosh-stemcell-170.(.*)-google-kvm-ubuntu-xenial-go_agent.tgz #light-bosh-stemcell-170.51-google-kvm-ubuntu-xenial-go_agent.tgz
 
+- name: stemcell-250
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: stemcell/light-bosh-stemcell-250.(.*)-google-kvm-ubuntu-xenial-go_agent.tgz #light-bosh-stemcell-170.51-google-kvm-ubuntu-xenial-go_agent.tgz
+
 - name: healthwatch-product
   type: gcs-resource
   source:
@@ -356,6 +363,36 @@ jobs:
       config: configuration-interpolated
   - aggregate:
     - put: stemcell-170
+      params:
+        file: downloaded-product/*.tgz
+
+- name: fetch-stemcell-250
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-opsman]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: download-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/stemcell-250.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: stemcell-250
       params:
         file: downloaded-product/*.tgz
 
@@ -651,6 +688,36 @@ jobs:
     params:
       ENV_FILE: ((pas.env_name))/env/env.yml
 
+- name: upload-stemcell-250
+  serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: stemcell-250
+      passed: [ fetch-stemcell-250 ]
+    - get: configuration
+      trigger: true
+      passed: [ upload-stemcell-170 ]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      env: configuration-interpolated
+      stemcell: stemcell-250
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
 - name: upload-and-stage-pas
   serial: true
   serial_groups: 
@@ -668,7 +735,7 @@ jobs:
       passed: [ fetch-pas ]
     - get: configuration
       trigger: true
-      passed: [ upload-stemcell-170 ]
+      passed: [ upload-stemcell-250 ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
@@ -941,6 +1008,7 @@ groups:
   jobs:
   - fetch-opsman
   - fetch-stemcell-170
+  - fetch-stemcell-250
   - fetch-pas
   - fetch-healthwatch
   - fetch-metrics
@@ -952,6 +1020,7 @@ groups:
   - export-installation
   - upgrade-opsman
   - upload-stemcell-170
+  - upload-stemcell-250
   - upload-and-stage-pas
   - upload-and-stage-healthwatch
   - upload-and-stage-metrics

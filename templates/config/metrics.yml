@@ -1,0 +1,70 @@
+product-name: apmPostgres
+product-properties:
+  .errand-runner.ingestor_instance_count:
+    value: 1
+  .errand-runner.logs_queue_instance_count:
+    value: 1
+  .errand-runner.logs_queue_max_retention_percentage:
+    value: 85
+  .errand-runner.logs_queue_retention_percentage_interval:
+    value: 1h
+  .errand-runner.logs_retention_window:
+    value: 14
+  .errand-runner.metrics_queue_instance_count:
+    value: 1
+  .errand-runner.metrics_retention_window:
+    value: 14
+  .errand-runner.push_apps_log_level:
+    value: error
+  .errand-runner.server_instance_count:
+    value: 1
+network-properties:
+  network:
+    name: {{ (ds "data").services_subnet_name }}
+  other_availability_zones:
+  - name: {{ index (ds "data").azs 0 }}
+  - name: {{ index (ds "data").azs 1 }}
+  - name: {{ index (ds "data").azs 2 }}
+  singleton_availability_zone:
+    name: {{ index (ds "data").azs 0 }}
+resource-config:
+  errand-runner:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  mysql:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  postgres:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  redis:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+errand-config:
+  delete-prior-space:
+    post-deploy-state: true
+  delete-space:
+    pre-delete-state: true
+  migrate-route:
+    post-deploy-state: true
+  push-apps:
+    post-deploy-state: true
+  smoke-tests:
+    post-deploy-state: true
+

@@ -37,14 +37,10 @@ run:
         mkdir -p interpolated-config/$ENV_NAME/config
         mkdir -p interpolated-config/$ENV_NAME/env
         mkdir -p interpolated-config/$ENV_NAME/download-product-configs
-        #/bin/gomplate -f config/$ENV_NAME/config/auth.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/auth.yml --verbose
-        #/bin/gomplate -f config/$ENV_NAME/config/director.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/director.yml --verbose
         /bin/gomplate --input-dir config/$ENV_NAME/config -d data=file://$(pwd)/terraform-output/metadata?type=application/json --output-dir interpolated-config/$ENV_NAME/config --verbose
         /bin/gomplate -i $'gcp_auth_json: |\n{{env.Getenv "GCP_AUTH_JSON" | strings.Indent 2 }}' -o interpolated-config/$ENV_NAME/config/director-vars.yml --verbose
-        #/bin/gomplate -f config/$ENV_NAME/config/opsman.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/config/opsman.yml --verbose
         /bin/gomplate -i $'gcp_auth_json: |\n{{env.Getenv "GCP_AUTH_JSON" | strings.Indent 2 }}' -o interpolated-config/$ENV_NAME/config/opsman-vars.yml --verbose
         /bin/gomplate -i $'cloud_controller_encrypt_key: {{env.Getenv "CLOUD_CONTROLLER_ENCRYPT_KEY"}}\nmysql_email: {{env.Getenv "MYSQL_EMAIL"}}\ncredhub_key_encryption_password: {{env.Getenv "CREDHUB_KEY_ENCRYPTION_PASSWORD"}}' -o interpolated-config/$ENV_NAME/config/cf-vars.yml --verbose
-        #/bin/gomplate -f config/$ENV_NAME/download-product-configs/opsman.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/download-product-configs/opsman.yml --verbose
         /bin/gomplate --input-dir config/$ENV_NAME/download-product-configs -d data=file://$(pwd)/terraform-output/metadata?type=application/json --output-dir interpolated-config/$ENV_NAME/download-product-configs --verbose
         /bin/gomplate -i 'pivnet-api-token: {{env.Getenv "PIVNET_API_TOKEN" }}' -o interpolated-config/$ENV_NAME/download-product-configs/vars.yml --verbose
         /bin/gomplate -f config/$ENV_NAME/env/env.yml -d data=file://$(pwd)/terraform-output/metadata?type=application/json -o interpolated-config/$ENV_NAME/env/env.yml --verbose

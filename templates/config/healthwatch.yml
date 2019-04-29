@@ -1,0 +1,77 @@
+product-name: p-healthwatch
+product-properties:
+  .healthwatch-forwarder.boshhealth_instance_count:
+    value: 1
+  .healthwatch-forwarder.boshtasks_instance_count:
+    value: 2
+  .healthwatch-forwarder.canary_instance_count:
+    value: 2
+  .healthwatch-forwarder.cli_instance_count:
+    value: 2
+  .healthwatch-forwarder.health_check_az:
+    value: {{ index (ds "data").azs 0 }}
+  .healthwatch-forwarder.ingestor_instance_count:
+    value: 4
+  .healthwatch-forwarder.opsman_instance_count:
+    value: 2
+  .healthwatch-forwarder.publish_to_eva:
+    value: true
+  .healthwatch-forwarder.worker_instance_count:
+    value: 4
+  .mysql.skip_name_resolve:
+    value: true
+  .properties.boshtasks:
+    selected_option: disable
+    value: disable
+  .properties.indicators_selector:
+    selected_option: inactive
+    value: "No"
+  .properties.opsman:
+    selected_option: enable
+    value: enable
+  .properties.opsman.enable.url:
+    value: https://{{ (ds "data").ops_manager_dns }}
+  .properties.syslog_selector:
+    selected_option: inactive
+    value: "No"
+network-properties:
+  network:
+    name: {{ (ds "data").services_subnet_name }}
+  other_availability_zones:
+  - name: {{ index (ds "data").azs 0 }}
+  - name: {{ index (ds "data").azs 1 }}
+  - name: {{ index (ds "data").azs 2 }}
+  singleton_availability_zone:
+    name: {{ index (ds "data").azs 0 }}
+  service_network:
+    name: {{ (ds "data").services_subnet_name }}
+resource-config:
+  healthwatch-forwarder:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  mysql:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  redis:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+errand-config:
+  delete-space:
+    pre-delete-state: true
+  push-apps:
+    post-deploy-state: true
+  smoke-tests:
+    post-deploy-state: true
+
