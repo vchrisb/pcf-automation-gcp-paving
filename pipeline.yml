@@ -954,6 +954,7 @@ jobs:
       env: configuration-interpolated
     params:
       CONFIG_FILE: ((pas.env_name))/config/mysql.yml
+      VARS_FILES: config/((pas.env_name))/config/mysql-vars.yml
       ENV_FILE: ((pas.env_name))/env/env.yml
 
 - name: apply-product-changes
@@ -971,7 +972,7 @@ jobs:
         unpack: true
     - get: configuration
       trigger: true
-      passed: [ upload-stage-configure-metrics ]
+      passed: [ upload-stage-configure-mysql ]
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate

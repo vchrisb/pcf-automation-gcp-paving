@@ -1,0 +1,154 @@
+product-name: pivotal-mysql
+product-properties:
+  .properties.allow_lower_case_table_names_via_config_param:
+    value: false
+  .properties.audit_logging_enabled:
+    value: false
+  .properties.backups_selector:
+    selected_option: gcs
+    value: GCS
+  .properties.backups_selector.gcs.bucket_name:
+    value: mysql
+  .properties.backups_selector.gcs.cron_schedule:
+    value: 0 */8 * * *
+  .properties.backups_selector.gcs.enable_email_alerts:
+    value: false
+  .properties.backups_selector.gcs.project_id:
+    value: {{ (ds "data").project }}
+  .properties.backups_selector.gcs.service_account_json:
+    value:
+      secret: ((gcp_auth_json))
+  .properties.canary_instances:
+    value: 0
+  .properties.deprecated_bindings_string:
+    value: X
+  .properties.enable_lower_case_table_names:
+    value: false
+  .properties.enable_read_only_admin:
+    value: false
+  .properties.enable_secure_binding_credentials:
+    value: true
+  .properties.enable_tls_selector:
+    selected_option: enabled
+    value: enabled
+  .properties.global_recipient_email:
+    value: ((mysql_email))
+  .properties.global_service_instance_limit:
+    value: 50
+  .properties.local_infile:
+    value: false
+  .properties.mysql_metrics_frequency:
+    value: 30
+  .properties.plan1_selector:
+    selected_option: single_node
+    value: single_node
+  .properties.plan1_selector.single_node.access_dropdown:
+    value: enable
+  .properties.plan1_selector.single_node.az_multi_select:
+    value:
+    - {{ index (ds "data").azs 0 }}
+  .properties.plan1_selector.single_node.description:
+    value: This plan provides a small dedicated MySQL instance.
+  .properties.plan1_selector.single_node.instance_limit:
+    value: 30
+  .properties.plan1_selector.single_node.name:
+    value: db-small
+  .properties.plan1_selector.single_node.paid_plan:
+    value: false
+  .properties.plan2_selector:
+    selected_option: leader_follower
+    value: leader_follower
+  .properties.plan2_selector.leader_follower.access_dropdown:
+    value: enable
+  .properties.plan2_selector.leader_follower.az_multi_select:
+    value:
+    - {{ index (ds "data").azs 0 }}
+    - {{ index (ds "data").azs 1 }}
+  .properties.plan2_selector.leader_follower.description:
+    value: This plan provides a medium dedicated MySQL Leader Follower instance.
+  .properties.plan2_selector.leader_follower.instance_limit:
+    value: 30
+  .properties.plan2_selector.leader_follower.name:
+    value: db-medium
+  .properties.plan2_selector.leader_follower.paid_plan:
+    value: false
+  .properties.plan3_selector:
+    selected_option: galera
+    value: galera
+  .properties.plan3_selector.galera.access_dropdown:
+    value: enable
+  .properties.plan3_selector.galera.az_multi_select:
+    value:
+    - {{ index (ds "data").azs 1 }}
+    - {{ index (ds "data").azs 2 }}
+    - {{ index (ds "data").azs 3 }}
+  .properties.plan3_selector.galera.description:
+    value: This plan provides a large dedicated MySQL Cluster.
+  .properties.plan3_selector.galera.instance_limit:
+    value: 5
+  .properties.plan3_selector.galera.jumpbox_vm_type:
+    value: large
+  .properties.plan3_selector.galera.name:
+    value: db-large
+  .properties.plan3_selector.galera.paid_plan:
+    value: false
+  .properties.plan3_selector.galera.vm_type:
+    value: large
+  .properties.plan4_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.plan5_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.plan6_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.plan7_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.plan8_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.plan9_selector:
+    selected_option: inactive
+    value: Inactive
+  .properties.request_timeout:
+    value: 120
+  .properties.simultaneous_upgrades:
+    value: 1
+  .properties.syslog_migration_selector:
+    selected_option: disabled
+    value: disabled
+  .properties.userstat:
+    value: false
+  .properties.wait_timeout:
+    value: 28800
+network-properties:
+  network:
+    name: {{ (ds "data").services_subnet_name }}
+  other_availability_zones:
+  - name: {{ index (ds "data").azs 0 }}
+  - name: {{ index (ds "data").azs 1 }}
+  - name: {{ index (ds "data").azs 2 }}
+  service_network:
+    name: {{ (ds "data").services_subnet_name }}
+  singleton_availability_zone:
+    name: {{ index (ds "data").azs 0 }}
+resource-config:
+  dedicated-mysql-broker:
+    instances: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+errand-config:
+  delete-all-service-instances-and-deregister-broker:
+    pre-delete-state: true
+  register-broker:
+    post-deploy-state: true
+  smoke-tests:
+    post-deploy-state: true
+  upgrade-all-service-instances:
+    post-deploy-state: true
+  validate-before-upgrade-instances:
+    post-deploy-state: true
+
