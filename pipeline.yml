@@ -104,6 +104,13 @@ resources:
     json_key: ((gcp.gcp_service_account))
     regexp: apm-(.*).pivotal
 
+- name: mysql-product
+  type: gcs-resource
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: pivotal-mysql-(.*).pivotal
+
 - name: installation
   type: gcs-resource
   source:
@@ -458,6 +465,37 @@ jobs:
       config: configuration-interpolated
   - aggregate:
     - put: metrics-product
+      params:
+        file: downloaded-product/*.pivotal
+
+- name: fetch-mysql
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [terraforming-gcp]
+    - get: pcf-automation-source
+    - get: env-state-gcp
+      passed: [terraforming-gcp]
+  - <<: *interpolate
+  - task: download-mysql-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/mysql.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: mysql-product
       params:
         file: downloaded-product/*.pivotal
 
@@ -870,6 +908,54 @@ jobs:
       CONFIG_FILE: ((pas.env_name))/config/metrics.yml
       ENV_FILE: ((pas.env_name))/env/env.yml
 
+- name: upload-stage-configure-mysql
+  serial: true
+  serial_groups: 
+  - upgrade 
+  public: false
+  plan:
+  - aggregate:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: mysql-product
+    - get: configuration
+      trigger: true
+      passed: 
+      - upload-stage-configure-metrics
+      - fetch-mysql
+    - get: pcf-automation-source
+    - get: env-state-gcp
+  - <<: *interpolate
+  - task: upload-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-product.yml
+    input_mapping:
+      product: mysql-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: stage-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/stage-product.yml
+    input_mapping:
+      product: mysql-product
+      env: configuration-interpolated
+    params:
+      ENV_FILE: ((pas.env_name))/env/env.yml
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      config: configuration-interpolated
+      env: configuration-interpolated
+    params:
+      CONFIG_FILE: ((pas.env_name))/config/mysql.yml
+      ENV_FILE: ((pas.env_name))/env/env.yml
+
 - name: apply-product-changes
   serial: true
   serial_groups: 
@@ -1019,6 +1105,7 @@ groups:
   - fetch-pas
   - fetch-healthwatch
   - fetch-metrics
+  - fetch-mysql
 - name: install
   jobs:
   - install-opsman
@@ -1031,6 +1118,7 @@ groups:
   - upload-stage-configure-pas
   - upload-stage-configure-healthwatch
   - upload-stage-configure-metrics
+  - upload-stage-configure-mysql
   - apply-product-changes
 
 - name: destroy
