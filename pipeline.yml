@@ -572,7 +572,8 @@ jobs:
           params:
             repository: state-commit
             merge: true
-  - task: skip_ssl_validation
+  - &skip_ssl
+    task: skip_ssl_validation
     image: platform-automation-image
     input_mapping:
       env: configuration-interpolated
@@ -687,6 +688,7 @@ jobs:
     - get: pcf-automation-source
     - get: env-state-gcp
   - <<: *interpolate
+  - <<: *skip_ssl
   - task: upgrade-opsman
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upgrade-opsman.yml
