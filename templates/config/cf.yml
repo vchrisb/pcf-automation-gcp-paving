@@ -201,8 +201,8 @@ product-properties:
   .properties.push_apps_manager_poll_interval:
     value: 30
   .properties.route_integrity:
-    selected_option: mutual_tls_verify
-    value: mutual_tls_verify
+    selected_option: tls_verify
+    value: tls_verify
   .properties.route_services:
     selected_option: enable
     value: enable
