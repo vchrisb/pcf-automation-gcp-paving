@@ -8,7 +8,7 @@ variable "email" {
 }
 
 provider "acme" {
-  version = "<= 1.2.1"
+  version = "<= 1.1.2"
   server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
 
