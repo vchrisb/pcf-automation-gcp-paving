@@ -2,4 +2,13 @@
 pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "ops-manager-gcp-*.yml"
 pivnet-product-slug: ops-manager
-product-version: 2.5.2
+product-version-regex: 2.5.*
+
+s3-bucket: ((s3-bucket))
+s3-region-name: us-west-1      # required; sufficient for AWS
+s3-endpoint: ((s3-endpoint))   # if not using AWS, this is required
+
+s3-access-key-id: ((s3-access-key-id))
+s3-secret-access-key: ((s3-secret-access-key))
+
+s3-disable-ssl: true

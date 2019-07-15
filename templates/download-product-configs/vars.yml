@@ -1,0 +1,5 @@
+pivnet-api-token: {{env.Getenv "PIVNET_API_TOKEN" }}
+s3-bucket: {{env.Getenv "S3_BUCKET" }}
+s3-endpoint: {{env.Getenv "S3_ENDPOINT" }}
+s3-access-key-id: {{env.Getenv "S3_ACCESS_KEY_ID" }}
+s3-secret-access-key: {{env.Getenv "S3_SECRET_ACCESS_KEY" }}
