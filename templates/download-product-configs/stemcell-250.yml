@@ -3,3 +3,12 @@ pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "light-bosh-stemcell-*-google-kvm-ubuntu-xenial-go_agent.tgz"
 pivnet-product-slug: stemcells-ubuntu-xenial
 product-version-regex: ^250\..*$
+
+s3-bucket: ((s3-bucket))
+s3-region-name: us-west-1      # required; sufficient for AWS
+s3-endpoint: ((s3-endpoint))   # if not using AWS, this is required
+
+s3-access-key-id: ((s3-access-key-id))
+s3-secret-access-key: ((s3-secret-access-key))
+
+s3-disable-ssl: true
