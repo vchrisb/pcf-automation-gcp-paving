@@ -260,8 +260,22 @@ product-properties:
   .properties.syslog_use_tcp_for_file_forwarding_local_transport:
     value: false
   .properties.system_blobstore:
-    selected_option: internal
-    value: internal
+    selected_option: external_gcs_service_account
+    value: external_gcs_service_account
+  .properties.system_blobstore.external_gcs_service_account.buildpacks_bucket:
+    value: {{ (ds "data").buildpacks_bucket }}
+  .properties.system_blobstore.external_gcs_service_account.droplets_bucket:
+    value: {{ (ds "data").droplets_bucket }}
+  .properties.system_blobstore.external_gcs_service_account.packages_bucket:
+    value: {{ (ds "data").packages_bucket }}
+  .properties.system_blobstore.external_gcs_service_account.project_id:
+    value: {{ (ds "data").pas_blobstore_service_account_project }} 
+  .properties.system_blobstore.external_gcs_service_account.resources_bucket:
+    value: {{ (ds "data").resources_bucket }}
+  .properties.system_blobstore.external_gcs_service_account.service_account_email:
+    value: {{ (ds "data").pas_blobstore_service_account_email }}
+  .properties.system_blobstore.external_gcs_service_account.service_account_json_key:
+    value: {{ (ds "data").pas_blobstore_gcp_service_account_key }}
   .properties.system_blobstore_ccdroplet_max_staged_droplets_stored:
     value: 2
   .properties.system_blobstore_ccpackage_max_valid_packages_stored:
