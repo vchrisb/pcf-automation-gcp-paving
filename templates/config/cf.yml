@@ -275,7 +275,8 @@ product-properties:
   .properties.system_blobstore.external_gcs_service_account.service_account_email:
     value: {{ (ds "data").pas_blobstore_service_account_email }}
   .properties.system_blobstore.external_gcs_service_account.service_account_json_key:
-    value: {{ (ds "data").pas_blobstore_gcp_service_account_key }}
+    value: |
+{{ (ds "data").pas_blobstore_gcp_service_account_key | strings.Indent 6}}
   .properties.system_blobstore_ccdroplet_max_staged_droplets_stored:
     value: 2
   .properties.system_blobstore_ccpackage_max_valid_packages_stored:
