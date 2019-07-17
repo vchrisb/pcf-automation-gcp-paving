@@ -304,9 +304,78 @@ product-properties:
     value: 0
   .properties.uaa.internal.password_min_uppercase:
     value: 0
-  .properties.uaa_database:
-    selected_option: internal_mysql
-    value: internal_mysql
+  .properties.system_database:
+    selected_option: external
+    value: external
+  .properties.system_database.external.account_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.account_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.app_usage_service_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.app_usage_service_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.autoscale_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.autoscale_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.ccdb_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.ccdb_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.credhub_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.credhub_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.diego_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.diego_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.host:
+    value: {{ (ds "data").sql_db_ip }}
+  .properties.system_database.external.locket_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.locket_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.networkpolicyserver_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.networkpolicyserver_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.nfsvolume_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.nfsvolume_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.notifications_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.notifications_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.port:
+    value: 3306
+  .properties.system_database.external.routing_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.routing_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.silk_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.silk_username:
+    value: {{ (ds "data").pas_sql_username }}
+  .properties.system_database.external.uaa_password:
+    value:
+      secret: {{ (ds "data").pas_sql_password }}
+  .properties.system_database.external.uaa_username:
+    value: {{ (ds "data").pas_sql_username }}
   .properties.uaa_session_cookie_max_age:
     value: 28800
   .properties.uaa_session_idle_timeout:

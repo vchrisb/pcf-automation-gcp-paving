@@ -47,6 +47,7 @@ resources:
       email: ((pas.mysql_email))
       create_mesh_lb: ((pas.create_mesh_lb))
       create_tcp_router: ((pas.create_tcp_router))
+      external_database: ((pas.external_database))
 
 # buckets
 
