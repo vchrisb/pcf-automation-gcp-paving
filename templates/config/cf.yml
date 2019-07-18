@@ -22,7 +22,9 @@ product-properties:
   .cloud_controller.max_disk_quota_app:
     value: 2048
   .cloud_controller.max_file_size:
-    value: 1024
+    value: 1024  
+  .cloud_controller.max_package_size:
+    value: 2147483648
   .cloud_controller.security_event_logging_enabled:
     value: true
   .cloud_controller.staging_timeout_in_seconds:
@@ -80,6 +82,8 @@ product-properties:
     value: true
   .properties.cf_networking_internal_domain:
     value: apps.internal
+  .properties.cloud_controller_completed_tasks_cutoff_age_in_days:
+    value: 31
   .properties.cloud_controller_default_health_check_timeout:
     value: 60
   .properties.cloud_controller_temporary_disable_deployments:
@@ -124,6 +128,8 @@ product-properties:
   .properties.diego_log_timestamp_format:
     selected_option: rfc3339
     value: rfc3339
+  .properties.enable_garden_containerd_mode:
+    value: true
   .properties.enable_smb_volume_driver:
     value: false
   .properties.enable_tls_to_internal_pxc:
@@ -133,6 +139,8 @@ product-properties:
   .properties.garden_disk_cleanup:
     selected_option: reserved
     value: reserved
+  .properties.garden_disk_cleanup.reserved.reserved_space_for_other_jobs_in_mb:
+    value: 15360
   .properties.gorouter_ssl_ciphers:
     value: ECDHE-RSA-AES128-GCM-SHA256:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
   .properties.haproxy_client_cert_validation:
@@ -161,6 +169,8 @@ product-properties:
       name: istio-cert  
   .properties.locket_database_max_open_connections:
     value: 200
+  .properties.log_cache_max_per_source:
+    value: 100000
   .properties.metric_registrar_blacklisted_tags:
     value: deployment,job,index,id
   .properties.metric_registrar_enabled:
@@ -208,6 +218,8 @@ product-properties:
     value: enable
   .properties.route_services.enable.ignore_ssl_cert_verification:
     value: false
+  .properties.route_services.enable.internal_lookup:
+    value: false
   .properties.router_backend_max_conn:
     value: 500
   .properties.router_client_cert_validation:
@@ -218,6 +230,8 @@ product-properties:
   .properties.router_keepalive_connections:
     selected_option: enable
     value: enable
+  .properties.router_prune_all_stale_routes:
+    value: false
   .properties.routing_disable_http:
     value: false
   .properties.routing_log_client_ips:
@@ -247,6 +261,8 @@ product-properties:
       identity: ""
       password: ""
   .properties.smtp_enable_starttls_auto:
+    value: false
+  .properties.syslog_agent_enabled:
     value: false
   .properties.syslog_drop_debug:
     value: true
@@ -282,6 +298,8 @@ product-properties:
   .properties.system_database:
     selected_option: internal_pxc
     value: internal_pxc
+  .properties.system_metrics_enabled:
+    value: true
   .properties.tcp_routing:
     selected_option: disable
     value: disable
