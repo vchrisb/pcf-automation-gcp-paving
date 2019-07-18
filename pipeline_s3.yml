@@ -48,6 +48,8 @@ resources:
       create_mesh_lb: ((pas.create_mesh_lb))
       create_tcp_router: ((pas.create_tcp_router))
       external_database: ((pas.external_database))
+      pas_sql_db_host: "%"
+      opsman_sql_db_host: "%"
 
 # buckets
 
@@ -322,7 +324,7 @@ jobs:
     - get: env-state-gcp
       passed: [terraforming-gcp]
   - <<: *interpolate
-  - task: download-stemcell
+  - task: download-pas
     image: platform-automation-image
     file: platform-automation-tasks/tasks/download-product.yml
     params:

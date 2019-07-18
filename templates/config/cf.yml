@@ -248,8 +248,6 @@ product-properties:
       password: ""
   .properties.smtp_enable_starttls_auto:
     value: false
-  .properties.stack_migration_acknowledgement:
-    value: X
   .properties.syslog_drop_debug:
     value: true
   .properties.syslog_metrics_to_syslog_enabled:
