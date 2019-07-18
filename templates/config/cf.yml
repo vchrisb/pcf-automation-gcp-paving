@@ -286,6 +286,8 @@ product-properties:
     value: {{ (ds "data").pas_blobstore_service_account_project }} 
   .properties.system_blobstore.external_gcs_service_account.resources_bucket:
     value: {{ (ds "data").resources_bucket }}
+  .properties.system_blobstore.external_gcs_service_account.backup_bucket:
+    value: {{ (ds "data").backup_bucket }}
   .properties.system_blobstore.external_gcs_service_account.service_account_email:
     value: {{ (ds "data").pas_blobstore_service_account_email }}
   .properties.system_blobstore.external_gcs_service_account.service_account_json_key:
