@@ -2,7 +2,7 @@
 pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "cf-*pivotal"
 pivnet-product-slug: elastic-runtime
-product-version: 2.6.2
+product-version: 2.6.3
 
 s3-bucket: ((s3-bucket))
 s3-region-name: us-west-1      # required; sufficient for AWS

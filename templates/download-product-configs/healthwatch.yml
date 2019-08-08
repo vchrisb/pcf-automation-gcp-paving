@@ -2,4 +2,4 @@
 pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "p-healthwatch*pivotal"
 pivnet-product-slug: p-healthwatch
-product-version: 1.5.2
+product-version: 1.6.1

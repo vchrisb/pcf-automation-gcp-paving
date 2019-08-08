@@ -2,4 +2,4 @@
 pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "pivotal-mysql-*pivotal"
 pivnet-product-slug: pivotal-mysql
-product-version: 2.5.4
+product-version: 2.7.0
