@@ -163,9 +163,9 @@ product-properties:
     value:
     - certificate:
         cert_pem: |
-{{ (ds "data").mesh_ssl_cert | strings.Indent 10 }}
+{{ (ds "data").ssl_cert | strings.Indent 10 }}
         private_key_pem: |
-{{ (ds "data").mesh_ssl_private_key | strings.Indent 10 }}
+{{ (ds "data").ssl_private_key | strings.Indent 10 }}
       name: istio-cert  
   .properties.locket_database_max_open_connections:
     value: 200
