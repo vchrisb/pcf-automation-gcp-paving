@@ -47,6 +47,8 @@ resource "acme_certificate" "pas-certificate" {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
       GCE_PROPAGATION_TIMEOUT   = "600"
+      GCE_POLLING_INTERVAL      = "10"
+      GCE_TTL                   = "60"
     }
   }
 }
@@ -93,6 +95,8 @@ resource "acme_certificate" "pas-mesh-certificate" {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
       GCE_PROPAGATION_TIMEOUT   = "600"
+      GCE_POLLING_INTERVAL      = "10"
+      GCE_TTL                   = "60"
     }
   }
 }
@@ -138,6 +142,8 @@ resource "acme_certificate" "opsman-certificate" {
       GCE_PROJECT               = "${var.project}"
       GCE_SERVICE_ACCOUNT       = "${var.service_account_key}"
       GCE_PROPAGATION_TIMEOUT   = "600"
+      GCE_POLLING_INTERVAL      = "10"
+      GCE_TTL                   = "60"
     }
   }
 }
