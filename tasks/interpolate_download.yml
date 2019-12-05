@@ -1,0 +1,31 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: hairyhenderson/gomplate
+    tag: alpine
+inputs:
+  - name: config
+  # - This is the input folder containing the file to be committed.
+  #   Typically, this will from some other task
+  #   with an output that needs to be persisted.
+outputs:
+  - name: interpolated-config
+
+params:
+  ENV_NAME:
+  PIVNET_API_TOKEN:
+  BUCKET:
+  GCP_AUTH_JSON:
+  PROJECT_ID:
+
+run:
+  path: /bin/sh
+  args:
+    - -c
+    - |
+        set -eu
+        mkdir -p interpolated-config/$ENV_NAME/download-product-configs
+        /bin/gomplate --input-dir config/templates/download-product-pivnet --output-dir interpolated-config/$ENV_NAME/download-product-configs --verbose
+

@@ -1,0 +1,9 @@
+---
+pivnet-api-token: ((pivnet-api-token))
+pivnet-file-glob: "ops-manager-gcp-*.yml"
+pivnet-product-slug: ops-manager
+product-version-regex: ^2\.7\.\d+$
+
+blobstore-bucket: ((blobstore-bucket))
+gcs-project-id: ((gcs-project-id))
+gcs-service-account-json: ((gcs-service-account-json))

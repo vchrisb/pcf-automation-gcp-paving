@@ -1,5 +1,5 @@
 pivnet-api-token: {{env.Getenv "PIVNET_API_TOKEN" }}
-bucket: {{env.Getenv "BUCKET" }}
+blobstore-bucket: {{env.Getenv "BUCKET" }}
 gcs-project-id: {{env.Getenv "PROJECT_ID" }}
 gcs-service-account-json: |
 {{env.Getenv "GCP_AUTH_JSON" | strings.Indent 2 }}

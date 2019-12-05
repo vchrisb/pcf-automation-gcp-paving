@@ -1047,9 +1047,6 @@ jobs:
   plan:
   - aggregate:
     - get: configuration
-      trigger: true
-      passed:
-      - destroy-installation
     - get: state
   - put: env-state-gcp
     params:

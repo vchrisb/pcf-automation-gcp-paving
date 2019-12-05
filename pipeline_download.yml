@@ -1,0 +1,281 @@
+---
+resources:
+
+- name: platform-automation-pivnet
+  type: pivnet
+  icon: cloud-download-outline
+  source:
+    api_token: ((pivnet-api-token))
+    product_slug: platform-automation
+    product_version: ((platform-automation-version))
+    sort_by: semver
+
+# buckets
+
+- name: platform-automation-tasks
+  type: gcs-resource
+  icon: folder-google-drive
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: platform-automation-tasks-((platform-automation-version)).zip
+
+- name: platform-automation-image
+  type: gcs-resource
+  icon: folder-google-drive
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: platform-automation-image-((platform-automation-version)).tgz
+
+- name: opsman-image
+  type: gcs-resource
+  icon: folder-google-drive
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: ops-manager-gcp-(.*).yml
+
+- name: pas-product
+  type: gcs-resource
+  icon: folder-google-drive
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: cf-(.*).pivotal
+
+- name: stemcell-456
+  type: gcs-resource
+  icon: folder-google-drive
+  source:
+    bucket: ((gcp.buckets.pivnet_products))
+    json_key: ((gcp.gcp_service_account))
+    regexp: stemcell/light-bosh-stemcell-456.(.*)-google-kvm-ubuntu-xenial-go_agent.tgz #light-bosh-stemcell-170.51-google-kvm-ubuntu-xenial-go_agent.tgz
+
+# configurations
+- name: pcf-automation-source
+  type: git
+  icon: github-circle
+  source:
+    private_key: ((github.repos.pcf-automation-source.private_key))
+    uri: ((github.repos.pcf-automation-source.uri))
+    branch: gcp
+
+# - name: configuration-repo
+#   type: git
+#   icon: github-circle
+#   source:
+#     private_key: ((github.repos.configuration.private_key))
+#     uri: ((github.repos.configuration.uri))
+#     branch: master
+
+# triggers used to have jobs do something in a timely manner
+
+- name: 24h-trigger
+  type: time
+  icon: alarm-check
+  source:
+    interval: 24h
+
+jobs:
+
+# - name: bootstrap-configuration
+#   serial: true
+#   public: false
+#   plan:
+#   - aggregate:
+#     - get: one-time-trigger
+#       trigger: true
+#     - get: pcf-automation-source
+#     - get: configuration-repo
+#     - get: state-repo
+#   - task: add-new-templates
+#     input_mapping:
+#       config: configuration-repo
+#       state: state-repo
+#       pcf-automation: pcf-automation-source
+#     params:
+#       ENV_NAME: ((pas.env_name))
+#       GIT_AUTHOR_EMAIL: "pcf-pipeline-bot@banck.net"
+#       GIT_AUTHOR_NAME: "PCF Automation Bot"
+#       COMMIT_MESSAGE: 'Update template files'
+#     config:
+#       platform: linux
+#       image_resource:
+#         type: docker-image
+#         source:
+#           repository: alpine/git
+#       inputs:
+#         - name: config
+#         - name: state
+#         - name: pcf-automation
+#       outputs:
+#         - name: config-commit
+#         - name: state-commit
+#       run:
+#         path: /bin/sh
+#         args:
+#           - -c
+#           - |
+#               set -eux
+#               git config --global user.email "$GIT_AUTHOR_EMAIL"
+#               git config --global user.name "$GIT_AUTHOR_NAME"
+#               git clone config config-commit
+#               mkdir -p config-commit/$ENV_NAME
+#               cp -a pcf-automation/templates/* config-commit/$ENV_NAME
+#               cp -a pcf-automation/terraforming-gcp config-commit/$ENV_NAME
+#               cp -a pcf-automation/terraform_override_files config-commit/$ENV_NAME
+#               cd config-commit
+#               git add -A
+#               git diff-index --quiet HEAD || git commit -m "$COMMIT_MESSAGE"
+#               cd ..
+#               git clone state state-commit
+#               mkdir -p state-commit/$ENV_NAME/state
+#               touch state-commit/$ENV_NAME/state/state.yml
+#               cd state-commit
+#               git add -A
+#               git diff-index --quiet HEAD || git commit -m "Created empty state file"
+#   - put: configuration
+#     params:
+#       repository: config-commit
+#       merge: true
+#   - put: state
+#     params:
+#       repository: state-commit
+#       merge: true
+
+
+- name: fetch-platform-automation
+  # We use the pivnet resource to bootstrap the pipeline,
+  # and because this product is part of the pipeline, not the foundation
+  plan:
+  - get: one-time-trigger
+    trigger: true
+  - get: platform-automation-pivnet
+  - aggregate:
+    - put: platform-automation-tasks
+      params:
+        file: platform-automation-pivnet/*tasks*.zip
+    - put: platform-automation-image
+      params:
+        file: platform-automation-pivnet/*image*.tgz
+
+### FETCH JOBS
+- name: fetch-opsman
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: one-time-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-platform-automation]
+    - get: pcf-automation-source
+  - &interpolate
+    task: interpolate-config
+    file: pcf-automation-source/tasks/interpolate_download.yml
+    input_mapping:
+      config: configuration
+    output_mapping:
+      interpolated-config: configuration-interpolated
+    params:
+      ENV_NAME: "download"
+      PIVNET_API_TOKEN: ((pivnet-api-token))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      BUCKET: ((gcp.buckets.pivnet_products))
+      GCP_AUTH_JSON: ((gcp.gcp_service_account))
+      PROJECT_ID: ((gcp.project))
+  - task: download-opsman-image
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/opsman.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - put: opsman-image
+    params:
+      file: downloaded-product/*
+
+- name: fetch-pas
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: one-time-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-platform-automation]
+    - get: pcf-automation-source
+  - <<: *interpolate
+  - task: download-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/pas.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: pas-product
+      params:
+        file: downloaded-product/*.pivotal
+
+
+- name: fetch-stemcell-456
+  serial: true
+  public: false
+  plan:
+  - aggregate:
+    - get: one-time-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: configuration
+      trigger: true
+      passed: [fetch-platform-automation]
+    - get: pcf-automation-source
+  - <<: *interpolate
+  - task: download-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((pas.env_name))/download-product-configs/stemcell-456.yml
+      VARS_FILES: config/((pas.env_name))/download-product-configs/vars.yml
+    input_mapping:
+      config: configuration-interpolated
+  - aggregate:
+    - put: stemcell-456
+      params:
+        file: downloaded-product/*.tgz
+
+
+groups:
+- name: prepare
+  jobs:
+#  - terraforming-gcp
+#  - bootstrap-configuration
+  - fetch-platform-automation
+- name: fetch
+  jobs:
+  - fetch-opsman
+  - fetch-stemcell-456
+  - fetch-pas
